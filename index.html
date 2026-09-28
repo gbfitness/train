@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Train</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#EFF2EE" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0E1A21" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Train">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<style>
+:root{
+  --paper:#EFF2EE; --card:#FFFFFF; --ink:#12232E; --ink2:#52626D; --line:#D3DAD6;
+  --run:#D93F5B; --lift:#4F46B8; --ride:#0C8F9B; --amber:#E9A400; --go:#1C9B57;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --paper:#0E1A21; --card:#16262F; --ink:#E9EFEC; --ink2:#9BABB4; --line:#284049;
+    --run:#F0607B; --lift:#8A83F0; --ride:#2CC0CD; --amber:#F0B429; --go:#34C77B; }
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--paper);color:var(--ink);
+  font:16px/1.4 -apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;
+  padding-bottom:calc(84px + env(safe-area-inset-bottom));}
+.wrap{max-width:520px;margin:0 auto;padding:calc(20px + env(safe-area-inset-top)) 18px 24px}
+h1,h2,.serif{font-family:ui-serif,"New York",Georgia,serif}
+h1{font-size:36px;line-height:1.05;margin:0 0 4px;font-weight:700;letter-spacing:-.02em}
+h2{font-size:22px;line-height:1.15;margin:0;font-weight:650;letter-spacing:-.01em}
+h3{font-size:15px;margin:22px 0 8px;font-weight:700}
+.sub{color:var(--ink2);font-size:14px}
+.note{color:var(--ink2);font-size:14px;margin-top:2px}
+button{font-family:inherit;color:inherit}
+.btn{appearance:none;border:0;border-radius:14px;padding:15px 18px;font-size:17px;font-weight:700;
+  background:var(--ink);color:var(--paper);width:100%;margin-top:10px}
+.btn.lift{background:var(--lift);color:#fff}.btn.run{background:var(--run);color:#fff}
+.btn.ride{background:var(--ride);color:#fff}.btn.go{background:var(--go);color:#fff}
+.btn.ghost{background:transparent;border:1.5px solid var(--line);color:var(--ink)}
+.btn.danger{background:transparent;border:1.5px solid var(--run);color:var(--run)}
+.link{appearance:none;background:none;border:0;padding:12px 0;font-size:15px;font-weight:600;color:var(--ink2);text-decoration:underline;text-underline-offset:3px}
+.small{appearance:none;border:1.5px solid var(--line);background:transparent;border-radius:10px;padding:8px 14px;font-size:15px;font-weight:650}
+
+/* tab bar */
+nav{position:fixed;left:0;right:0;bottom:0;z-index:20;display:flex;background:var(--card);
+  border-top:1px solid var(--line);padding:6px 4px calc(6px + env(safe-area-inset-bottom))}
+nav button{flex:1;appearance:none;background:none;border:0;padding:6px 0;font-size:11.5px;font-weight:650;
+  color:var(--ink2);display:flex;flex-direction:column;align-items:center;gap:3px}
+nav button[aria-current="true"]{color:var(--c)}
+nav svg{width:25px;height:25px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+/* today: week strip */
+.strip{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin:18px 0 6px}
+.day{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 0 7px;border-radius:12px;border:1.5px solid transparent}
+.day.now{border-color:var(--ink)}
+.dl{font-size:12px;color:var(--ink2);font-weight:650}
+.dn{font:650 18px ui-serif,"New York",Georgia,serif}
+.dots{display:flex;gap:3px;height:8px}
+.d{width:7px;height:7px;border-radius:50%;display:block}
+.d.run{background:var(--run)}.d.lift{background:var(--lift)}.d.ride{background:var(--ride)}
+.lane{display:flex;gap:14px;align-items:center;padding:16px 0;border-top:1px solid var(--line)}
+.lane .bar{align-self:stretch;width:5px;border-radius:3px;flex:none}
+.lane .txt{flex:1;min-width:0}
+.lane .ttl{font:650 20px ui-serif,"New York",Georgia,serif}
+.lane button{flex:none}
+
+/* lifting */
+.exrow,.exhead{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.exrow{padding:14px 0;border-top:1px solid var(--line)}
+.exname{font:650 20px ui-serif,"New York",Georgia,serif}
+.wt{appearance:none;background:none;border:0;border-bottom:2px dotted var(--ink2);padding:2px 0;
+  font:700 30px/1 ui-serif,"New York",Georgia,serif;font-variant-numeric:tabular-nums lining-nums}
+.wt small{font:600 14px -apple-system,system-ui,sans-serif;color:var(--ink2)}
+.ex{padding:18px 0 20px;border-top:1px solid var(--line)}
+.sets{display:flex;gap:10px;margin-top:14px}
+.set{appearance:none;width:54px;height:54px;border-radius:50%;border:2.5px solid var(--lift);background:transparent;
+  color:var(--lift);font:700 21px ui-serif,"New York",Georgia,serif;display:grid;place-items:center;padding:0}
+.set[aria-pressed="true"]{background:var(--lift);color:#fff}
+.rest{position:sticky;top:0;z-index:10;margin:-4px -18px 8px;padding:calc(12px + env(safe-area-inset-top)) 18px 12px;
+  background:var(--ink);color:var(--paper);transition:background .25s}
+.rest.amber{background:var(--amber);color:#1B1300}
+.rest.go{background:var(--go);color:#fff}
+.rest .time{font:700 46px/1 ui-serif,"New York",Georgia,serif;font-variant-numeric:tabular-nums lining-nums}
+.rest .msg{font-size:14px;margin-top:6px;opacity:.95}
+.track{position:relative;height:8px;border-radius:4px;background:rgba(127,127,127,.35);margin-top:12px}
+.fill{height:100%;border-radius:4px;background:currentColor;width:0}
+.tick{position:absolute;top:-4px;bottom:-4px;width:2px;background:currentColor;opacity:.7;left:60%}
+.marks{position:relative;height:16px;font-size:12px;font-weight:650;margin-top:6px;opacity:.85}
+.marks span{position:absolute;transform:translateX(-50%)}
+
+/* running */
+.wk{padding:6px 0 4px}
+.prow{display:flex;gap:12px;align-items:flex-start;justify-content:space-between;padding:14px 0;border-top:1px solid var(--line)}
+.prow b{font:650 19px ui-serif,"New York",Georgia,serif}
+.prow.done b{color:var(--go)}
+.done-line{font-size:14px;font-weight:650;color:var(--go);margin-top:4px}
+details{border-top:1px solid var(--line)}
+summary{list-style:none;padding:14px 0;cursor:pointer;display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+summary::-webkit-details-marker{display:none}
+summary .wn{font:650 18px ui-serif,"New York",Georgia,serif}
+.meter{height:6px;border-radius:3px;background:var(--line);margin:10px 0 4px;overflow:hidden}
+.meter i{display:block;height:100%;background:var(--run)}
+
+/* stats + lists */
+.stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:14px}
+.stat{padding:12px 0;border-top:2px solid var(--ride)}
+.stat .n{font:700 30px/1 ui-serif,"New York",Georgia,serif;font-variant-numeric:tabular-nums lining-nums}
+.stat .l{font-size:13px;color:var(--ink2);margin-top:4px}
+.item{display:flex;gap:12px;align-items:flex-start;padding:13px 0;border-top:1px solid var(--line)}
+.item .bar{width:5px;align-self:stretch;border-radius:3px;flex:none}
+.item .body{flex:1;min-width:0}
+.item .h{font-weight:700}
+.item .x{color:var(--ink2);font-size:14px;margin-top:2px}
+.item .x span{margin-right:12px;white-space:nowrap}
+.item .del{appearance:none;background:none;border:0;color:var(--ink2);font-size:14px;padding:4px 0 4px 8px;text-decoration:underline}
+.empty{padding:22px 0;color:var(--ink2)}
+
+/* sheet */
+#sheet{position:fixed;inset:0;z-index:50;display:none;align-items:flex-end;background:rgba(8,18,24,.55)}
+#sheet.on{display:flex}
+.panel{width:100%;max-width:520px;margin:0 auto;background:var(--card);border-radius:22px 22px 0 0;
+  padding:22px 18px calc(20px + env(safe-area-inset-bottom));max-height:92vh;overflow:auto}
+.panel label{display:block;font-size:14px;font-weight:650;margin-top:14px}
+.panel input,.panel textarea{display:block;width:100%;margin-top:6px;padding:12px;border-radius:12px;
+  border:1.5px solid var(--line);background:var(--paper);color:var(--ink);font-size:17px;font-family:inherit}
+.panel textarea{height:180px;font:13px/1.35 ui-monospace,Menlo,monospace}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stepper{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.pace{margin-top:12px;font:650 20px ui-serif,"New York",Georgia,serif;min-height:26px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(96px + env(safe-area-inset-bottom));
+  background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:12px;font-size:14px;font-weight:650;z-index:60;max-width:90%}
+@media (prefers-reduced-motion: reduce){ .rest{transition:none} }
+button:focus-visible,input:focus-visible,textarea:focus-visible,summary:focus-visible{outline:3px solid var(--lift);outline-offset:2px}
+</style>
+</head>
+<body>
+<main class="wrap" id="app"></main>
+<nav id="nav" aria-label="Sections">
+  <button data-act="tab" data-tab="today" style="--c:var(--ink)"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M8 3v4M16 3v4M3.5 10h17"/></svg>Today</button>
+  <button data-act="tab" data-tab="lift" style="--c:var(--lift)"><svg viewBox="0 0 24 24"><path d="M6 7v10M18 7v10M3 10v4M21 10v4M6 12h12"/></svg>Lift</button>
+  <button data-act="tab" data-tab="run" style="--c:var(--run)"><svg viewBox="0 0 24 24"><circle cx="14.5" cy="4.5" r="1.8"/><path d="M5 21l4-6 3 1.5 1.5-5-3-1.2-3.5 3M13.5 10.5l3 2.5 3-.8M12 16.5l2 4.5"/></svg>Run</button>
+  <button data-act="tab" data-tab="ride" style="--c:var(--ride)"><svg viewBox="0 0 24 24"><circle cx="6" cy="16" r="3.5"/><circle cx="18" cy="16" r="3.5"/><path d="M6 16l4-8h5l3 8M10 8H8M12.5 12l-2.5 4"/></svg>Ride</button>
+  <button data-act="tab" data-tab="history" style="--c:var(--ink)"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>History</button>
+</nav>
+<div id="sheet" role="dialog" aria-modal="true"></div>
+
+<script>
+(function(){
+'use strict';
+
+/* ---------- constants ---------- */
+var KEY='train.v1';
+var START=new Date(2026,8,28);          // Monday, Sep 28, 2026 = week 1
+var RACE=new Date(2027,0,31);           // Sunday, Jan 31, 2027
+var LIFTS={squat:'Squat',bench:'Bench press',row:'Barbell row',ohp:'Overhead press',deadlift:'Deadlift'};
+var WORKOUTS={A:['squat','bench','row'],B:['squat','ohp','deadlift']};
+var SETS={squat:5,bench:5,row:5,ohp:5,deadlift:1};
+var KEYS=Object.keys(LIFTS);
+
+var E='Easy', L='Long', T='Steady';
+var NOTES={
+  Easy:'Easy, conversational effort. Around 9:00 per mile or slower is fine. Effort matters more than the number.',
+  Long:'Slow and steady, about 9:00 per mile (8:45 to 9:30 is fine). Walk breaks are fine.'
+};
+var PLAN=[
+  {runs:[[E,2],[L,3]]},
+  {runs:[[E,2.5],[L,3.5]]},
+  {runs:[[E,3],[L,4]]},
+  {tag:'Cutback week',runs:[[E,2.5],[L,3.5]]},
+  {runs:[[E,3],[L,5]]},
+  {runs:[[E,3.5],[L,5.5]]},
+  {runs:[[E,2],[T,2,'Steady: 2 miles total, middle mile at about 8:30.'],[L,6]]},
+  {tag:'Cutback week',runs:[[E,2],[T,2,'Relaxed: middle mile at about 8:40.'],[L,5]]},
+  {runs:[[E,2.5],[T,2.5,'Middle 1.5 miles at about 8:20.'],[L,6.5]]},
+  {runs:[[E,3],[T,3,'Middle 2 miles at about 8:15.'],[L,7.5]]},
+  {runs:[[E,3],[T,3.5,'Middle 2 miles at about 8:10.'],[L,8.5]]},
+  {tag:'Cutback week',runs:[[E,3],[T,3,'Keep it relaxed: middle mile at about 8:20.'],[L,6]]},
+  {runs:[[E,3.5],[T,4,'Middle 2 miles at goal pace, 8:00.'],[L,9.5]]},
+  {runs:[[E,3.5],[T,4,'Middle 3 miles at goal pace, 8:00.'],[L,10.5]]},
+  {runs:[[E,3.5],[T,4,'Middle 3 miles at goal pace, 8:00.'],[L,12,'Longest run of the plan. Easy pace, about 9:00. Walk breaks are fine.']]},
+  {tag:'Step-down week',runs:[[E,3],[T,3,'Middle 2 miles at goal pace, 8:00.'],[L,9]]},
+  {tag:'Taper',runs:[[E,3],[T,2,'1 mile at goal pace, 8:00, in the middle. Short and sharp.'],[L,6]]},
+  {tag:'Race week',runs:[[E,2.5,'Easy and loose. Do this early in the week.'],['Race',13.1,'Miami Half Marathon. Goal pace 8:00 per mile, about a 1:45 finish. Go out a little slower for the first 2 miles.']]}
+];
+
+/* ---------- helpers ---------- */
+function pad(n){return String(n).padStart(2,'0');}
+function ymd(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
+function today(){return ymd(new Date());}
+function parseYmd(s){var p=s.split('-').map(Number);return new Date(p[0],p[1]-1,p[2]);}
+function weekStart(d){var x=new Date(d.getFullYear(),d.getMonth(),d.getDate());x.setDate(x.getDate()-((x.getDay()+6)%7));return x;}
+function addDays(d,n){return new Date(d.getFullYear(),d.getMonth(),d.getDate()+n);}
+function fmtDate(s){return parseYmd(s).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});}
+function fmtShort(d){return d.toLocaleDateString('en-US',{month:'short',day:'numeric'});}
+function fmtDur(s){s=Math.round(s);var h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60;return h?h+':'+pad(m)+':'+pad(x):m+':'+pad(x);}
+function fmtNum(n){return String(+Number(n).toFixed(2));}
+function paceOf(mi,secs){if(!(mi>0)||!(secs>0))return '';var p=Math.round(secs/mi);return Math.floor(p/60)+':'+pad(p%60);}
+function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+function num(v){var n=parseFloat(String(v).replace(',','.'));return isFinite(n)?n:NaN;}
+function planWeekIndex(d){return Math.round((weekStart(d||new Date())-START)/(7*864e5));}
+function inWeek(dateStr,ws){var d=parseYmd(dateStr);return d>=ws&&d<addDays(ws,7);}
+
+/* ---------- state ---------- */
+function fresh(){
+  var w={},i={};KEYS.forEach(function(k){w[k]=45;i[k]=5;});w.deadlift=95;
+  return {v:1,settings:{weights:w,inc:i,next:'A',lastExport:null},lifts:[],runs:[],rides:[],active:null};
+}
+function coerce(o){
+  if(!o||typeof o!=='object')throw new Error('bad');
+  var d=fresh(),s=o.settings||{},re=/^\d{4}-\d{2}-\d{2}$/;
+  KEYS.forEach(function(k){
+    var w=Number(s.weights&&s.weights[k]);if(isFinite(w)&&w>=0)d.settings.weights[k]=w;
+    var i=Number(s.inc&&s.inc[k]);if(isFinite(i)&&i>=0)d.settings.inc[k]=i;
+  });
+  d.settings.next=s.next==='B'?'B':'A';
+  d.settings.lastExport=typeof s.lastExport==='number'?s.lastExport:null;
+  d.lifts=(Array.isArray(o.lifts)?o.lifts:[]).filter(function(l){return l&&re.test(String(l.date));}).map(function(l){
+    return {id:String(l.id||uid()),date:String(l.date),type:l.type==='B'?'B':'A',at:Number(l.at)||0,dur:Number(l.dur)||0,
+      ex:(Array.isArray(l.ex)?l.ex:[]).filter(function(e){return e&&LIFTS[e.k];}).map(function(e){
+        return {k:e.k,w:Number(e.w)||0,done:(Array.isArray(e.done)?e.done:[]).map(Boolean)};})};});
+  d.runs=(Array.isArray(o.runs)?o.runs:[]).filter(function(r){return r&&re.test(String(r.date))&&Number(r.miles)>0;}).map(function(r){
+    return {id:String(r.id||uid()),date:String(r.date),miles:Number(r.miles),secs:Number(r.secs)||0,planId:r.planId?String(r.planId):null,at:Number(r.at)||0};});
+  d.rides=(Array.isArray(o.rides)?o.rides:[]).filter(function(r){return r&&re.test(String(r.date));}).map(function(r){
+    return {id:String(r.id||uid()),date:String(r.date),mins:Number(r.mins)||0,kj:Number(r.kj)||0,at:Number(r.at)||0};});
+  var a=o.active;
+  if(a&&a.ex&&Array.isArray(a.ex)&&a.ex.every(function(e){return e&&LIFTS[e.k]&&Array.isArray(e.done);})){
+    d.active={type:a.type==='B'?'B':'A',startedAt:Number(a.startedAt)||Date.now(),date:re.test(String(a.date))?a.date:today(),
+      rest:a.rest?Number(a.rest):null,ex:a.ex.map(function(e){return {k:e.k,w:Number(e.w)||0,done:e.done.map(Boolean)};})};
+  }
+  return d;
+}
+function load(){
+  try{var raw=localStorage.getItem(KEY);if(raw)return coerce(JSON.parse(raw));}catch(e){}
+  return fresh();
+}
+var S=load();
+var ui={tab:'today',open:{},confirm:null,sheet:null};
+function save(){
+  try{localStorage.setItem(KEY,JSON.stringify(S));}
+  catch(e){toast('Could not save. Storage may be full or blocked.');}
+}
+
+/* ---------- plan lookups ---------- */
+function runId(wi,ri){return 'w'+(wi+1)+'r'+(ri+1);}
+function planById(id){
+  var m=/^w(\d+)r(\d+)$/.exec(id||'');if(!m)return null;
+  var w=PLAN[+m[1]-1];if(!w)return null;var r=w.runs[+m[2]-1];if(!r)return null;
+  return {wi:+m[1]-1,ri:+m[2]-1,t:r[0],mi:r[1],note:r[2]||NOTES[r[0]]||''};
+}
+function doneRun(id){return S.runs.filter(function(r){return r.planId===id;})[0]||null;}
+function nextRun(){
+  var wi=planWeekIndex();if(wi<0)wi=0;if(wi>=PLAN.length)return null;
+  var runs=PLAN[wi].runs;
+  for(var i=0;i<runs.length;i++){if(!doneRun(runId(wi,i)))return planById(runId(wi,i));}
+  return null;
+}
+function weekMiles(ws){return S.runs.filter(function(r){return inWeek(r.date,ws);}).reduce(function(a,r){return a+r.miles;},0);}
+function planMiles(wi){return PLAN[wi].runs.reduce(function(a,r){return a+r[1];},0);}
+
+/* ---------- views ---------- */
+function vToday(){
+  var now=new Date(),ws=weekStart(now),ts=ymd(now),i,strip='';
+  for(i=0;i<7;i++){
+    var d=addDays(ws,i),ds=ymd(d);
+    var l=S.lifts.some(function(x){return x.date===ds;}),r=S.runs.some(function(x){return x.date===ds;}),b=S.rides.some(function(x){return x.date===ds;});
+    strip+='<div class="day'+(ds===ts?' now':'')+'"><span class="dl">'+'MTWTFSS'[i]+'</span><span class="dn">'+d.getDate()+'</span><span class="dots">'+
+      (r?'<i class="d run"></i>':'')+(l?'<i class="d lift"></i>':'')+(b?'<i class="d ride"></i>':'')+'</span></div>';
+  }
+  var a=S.active,t=S.settings.next;
+  var liftTxt=a?'Workout '+a.type+' in progress':'Workout '+t+': '+WORKOUTS[t].map(function(k){return LIFTS[k].toLowerCase()+' '+fmtNum(S.settings.weights[k]);}).join(', ');
+  var nr=nextRun(),wi=planWeekIndex();
+  var runTxt=nr?nr.t+' run, '+fmtNum(nr.mi)+' miles':(wi>=0&&wi<PLAN.length?'This week\u2019s planned runs are done.':'Log a run any time.');
+  var runSub=(wi>=0&&wi<PLAN.length)?'Week '+(wi+1)+' of '+PLAN.length:'';
+  var weekRides=S.rides.filter(function(x){return inWeek(x.date,ws);}).length;
+  var days=Math.round((RACE-new Date(now.getFullYear(),now.getMonth(),now.getDate()))/864e5);
+  var race=days>0?'<p class="sub" style="margin-top:22px"><span class="serif" style="font-size:26px;font-weight:700;color:var(--ink)">'+days+' days</span><br>until the Miami Half Marathon, Sunday, Jan 31.</p>'
+    :(days===0?'<p class="serif" style="font-size:24px;margin-top:22px">Race day.</p>':'');
+  var nudge='';
+  var n=S.lifts.length+S.runs.length+S.rides.length;
+  if(n>=3&&(!S.settings.lastExport||Date.now()-S.settings.lastExport>30*864e5)){
+    nudge='<p class="note" style="margin-top:16px">Your data lives only on this phone. <button class="link" data-act="tab" data-tab="history" style="padding:0">Make a backup copy.</button></p>';
+  }
+  return '<h1>Today</h1><div class="sub">'+esc(now.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'}))+'</div>'+
+    '<div class="strip" aria-label="This week">'+strip+'</div>'+
+    '<div class="lane"><span class="bar" style="background:var(--lift)"></span><div class="txt"><div class="ttl">Lift</div><div class="note">'+esc(liftTxt)+'</div></div>'+
+      '<button class="small" data-act="tab" data-tab="lift">'+(a?'Resume':'Open')+'</button></div>'+
+    '<div class="lane"><span class="bar" style="background:var(--run)"></span><div class="txt"><div class="ttl">Run</div><div class="note">'+esc(runTxt)+'</div>'+(runSub?'<div class="note">'+runSub+'</div>':'')+'</div>'+
+      '<button class="small" data-act="'+(nr?'logRun':'tab')+'" data-plan="'+(nr?runId(nr.wi,nr.ri):'')+'" data-tab="run">'+(nr?'Log run':'Open')+'</button></div>'+
+    '<div class="lane"><span class="bar" style="background:var(--ride)"></span><div class="txt"><div class="ttl">Ride</div><div class="note">'+weekRides+(weekRides===1?' ride':' rides')+' this week</div></div>'+
+      '<button class="small" data-act="logRide">Log ride</button></div>'+
+    race+nudge;
+}
+
+function fmtW(w){return fmtNum(w);}
+
+function vLift(){
+  var a=S.active;
+  if(a)return workoutView(a);
+  var t=S.settings.next,other=t==='A'?'B':'A';
+  var rows=WORKOUTS[t].map(function(k){
+    return '<div class="exrow"><div><div class="exname">'+LIFTS[k]+'</div><div class="sub">'+SETS[k]+(SETS[k]>1?' sets':' set')+' of 5 reps</div></div>'+
+      '<button class="wt" data-act="editWeight" data-k="'+k+'" aria-label="Change '+LIFTS[k]+' weight">'+fmtW(S.settings.weights[k])+' <small>lb</small></button></div>';
+  }).join('');
+  var last=S.lifts.length?S.lifts[S.lifts.length-1]:null;
+  return '<h1>Lift</h1><div class="sub">'+(last?'Last workout: '+fmtDate(last.date)+' (Workout '+last.type+')':'No workouts yet. Tap a weight to change your starting weights.')+'</div>'+
+    '<h3>Workout '+t+'</h3>'+rows+
+    '<button class="btn lift" data-act="start">Start Workout '+t+'</button>'+
+    '<button class="link" data-act="swap">Switch to Workout '+other+'</button>'+
+    '<p class="note">Each finished exercise adds '+fmtNum(S.settings.inc.squat)+' lb next time. Exercises with unmarked sets stay at the same weight.</p>';
+}
+function workoutView(a){
+  var all=a.ex.every(function(e){return e.done.every(Boolean);});
+  var ex=a.ex.map(function(e,i){
+    var sets=e.done.map(function(d,j){
+      return '<button class="set" aria-pressed="'+d+'" aria-label="'+LIFTS[e.k]+' set '+(j+1)+' of '+e.done.length+', '+(d?'done':'not done')+'" data-act="set" data-i="'+i+'" data-j="'+j+'">5</button>';
+    }).join('');
+    return '<section class="ex"><div class="exhead"><h2>'+LIFTS[e.k]+'</h2>'+
+      '<button class="wt" data-act="editWeight" data-i="'+i+'" aria-label="Change weight">'+fmtW(e.w)+' <small>lb</small></button></div>'+
+      '<div class="sets">'+sets+'</div></section>';
+  }).join('');
+  return '<div class="rest" id="rest" role="timer"><div class="time">0:00</div><div class="msg"></div>'+
+      '<div class="track"><div class="fill"></div><div class="tick"></div></div>'+
+      '<div class="marks"><span style="left:60%">3:00</span><span style="left:calc(100% - 14px)">5:00</span></div></div>'+
+    '<div class="exhead" style="margin-top:12px"><h1>Workout '+a.type+'</h1></div>'+ex+
+    '<button class="btn '+(all?'go':'ghost')+'" data-act="finish">Finish workout</button>'+
+    '<button class="link" data-act="cancelWorkout">Discard this workout</button>';
+}
+
+function planSummary(wi){
+  var w=PLAN[wi],ws=addDays(START,7*wi);
+  var rows=w.runs.map(function(r,ri){
+    var id=runId(wi,ri),p=planById(id),d=doneRun(id);
+    return '<div class="prow'+(d?' done':'')+'"><div style="flex:1;min-width:0"><b>'+p.t+' '+(p.t==='Race'?'':'run ')+'\u2013 '+fmtNum(p.mi)+' mi</b>'+
+      '<div class="note">'+esc(p.note)+'</div>'+
+      (d?'<div class="done-line">Done '+fmtDate(d.date)+': '+fmtNum(d.miles)+' mi'+(d.secs?' in '+fmtDur(d.secs)+' ('+paceOf(d.miles,d.secs)+' per mile)':'')+'</div>':'')+'</div>'+
+      '<button class="small" data-act="logRun" data-plan="'+id+'">'+(d?'Edit':'Log')+'</button></div>';
+  }).join('');
+  return {rows:rows,ws:ws};
+}
+function vRun(){
+  var wi=planWeekIndex(),cur='',ws=weekStart(new Date());
+  if(wi>=0&&wi<PLAN.length){
+    var s=planSummary(wi),done=weekMiles(ws),plan=planMiles(wi);
+    cur='<h3>This week: week '+(wi+1)+' of '+PLAN.length+(PLAN[wi].tag?', '+PLAN[wi].tag.toLowerCase():'')+'</h3>'+
+      '<div class="sub">'+fmtShort(s.ws)+' to '+fmtShort(addDays(s.ws,6))+'. '+fmtNum(done)+' of '+fmtNum(plan)+' planned miles.</div>'+
+      '<div class="meter"><i style="width:'+Math.min(100,done/plan*100)+'%"></i></div>'+s.rows;
+  }else if(wi<0){
+    cur='<p class="sub">The plan starts '+fmtShort(START)+'.</p>';
+  }else{
+    cur='<p class="sub">The plan has finished. Log any run below.</p>';
+  }
+  var all=PLAN.map(function(w,i){
+    var s=planSummary(i),dn=weekMiles(s.ws);
+    return '<details data-week="'+i+'"'+(ui.open[i]?' open':'')+'><summary><span class="wn">Week '+(i+1)+(w.tag?' ('+w.tag.toLowerCase()+')':'')+'</span>'+
+      '<span class="sub">'+fmtShort(s.ws)+', '+fmtNum(dn)+' of '+fmtNum(planMiles(i))+' mi</span></summary>'+s.rows+'</details>';
+  }).join('');
+  return '<h1>Run</h1><div class="sub">Miami Half Marathon, Sunday, Jan 31, 2027. Goal: 8:00 per mile, about 1:45.</div>'+cur+
+    '<button class="btn ghost" data-act="logRun" data-plan="">Log an extra run</button>'+
+    '<h3>Full plan</h3>'+all+
+    '<p class="note" style="margin-top:18px">This is a general, gradual build-up, not coaching. If something hurts, skip the run and repeat the previous week\u2019s mileage. You can add a fourth run later by using the extra-run button.</p>';
+}
+
+function rideStats(from){
+  var r=S.rides.filter(function(x){return !from||parseYmd(x.date)>=from;});
+  return {n:r.length,mins:r.reduce(function(a,x){return a+x.mins;},0),kj:r.reduce(function(a,x){return a+x.kj;},0)};
+}
+function vRide(){
+  var now=new Date(),wk=rideStats(weekStart(now)),mo=rideStats(new Date(now.getFullYear(),now.getMonth(),1)),all=rideStats();
+  function block(t,s){return '<div class="stat"><div class="n">'+s.n+'</div><div class="l">'+t+(s.kj?'<br>'+Math.round(s.kj)+' kJ':'')+(s.mins?'<br>'+Math.round(s.mins)+' min':'')+'</div></div>';}
+  var list=S.rides.slice().sort(function(a,b){return b.date.localeCompare(a.date)||b.at-a.at;}).slice(0,8).map(function(r){return itemHtml('ride',r);}).join('');
+  return '<h1>Ride</h1><div class="sub">One tap to log. Minutes and output are optional.</div>'+
+    '<button class="btn ride" data-act="logRide">Log a ride</button>'+
+    '<div class="stats">'+block('This week',wk)+block('This month',mo)+block('All time',all)+'</div>'+
+    '<h3>Recent rides</h3>'+(list||'<div class="empty">No rides yet.</div>');
+}
+
+function itemHtml(kind,x){
+  var c=kind==='lift'?'lift':kind==='run'?'run':'ride',h,body='';
+  if(kind==='lift'){
+    h='Workout '+x.type;
+    body='<div class="x">'+x.ex.map(function(e){
+      var n=e.done.filter(Boolean).length;
+      return '<span>'+LIFTS[e.k]+' '+fmtW(e.w)+' lb, '+n+'/'+e.done.length+'</span>';}).join('')+'</div>'+(x.dur?'<div class="x"><span>'+Math.round(x.dur/60)+' min</span></div>':'');
+  }else if(kind==='run'){
+    h='Run, '+fmtNum(x.miles)+' mi';
+    body='<div class="x">'+(x.secs?'<span>'+fmtDur(x.secs)+'</span><span>'+paceOf(x.miles,x.secs)+' per mile</span>':'<span>No time logged</span>')+(x.planId?'<span>From plan</span>':'')+'</div>';
+  }else{
+    h='Ride';
+    body='<div class="x">'+((x.mins||x.kj)?(x.mins?'<span>'+fmtNum(x.mins)+' min</span>':'')+(x.kj?'<span>'+fmtNum(x.kj)+' kJ</span>':''):'<span>Logged</span>')+'</div>';
+  }
+  return '<div class="item"><span class="bar" style="background:var(--'+c+')"></span><div class="body"><div class="h">'+h+'</div><div class="x">'+fmtDate(x.date)+'</div>'+body+'</div>'+
+    '<button class="del" data-act="del" data-kind="'+kind+'" data-id="'+esc(x.id)+'">Delete</button></div>';
+}
+function vHistory(){
+  var items=[];
+  S.lifts.forEach(function(x){items.push(['lift',x]);});
+  S.runs.forEach(function(x){items.push(['run',x]);});
+  S.rides.forEach(function(x){items.push(['ride',x]);});
+  items.sort(function(a,b){return b[1].date.localeCompare(a[1].date)||(b[1].at||0)-(a[1].at||0);});
+  var list=items.slice(0,150).map(function(p){return itemHtml(p[0],p[1]);}).join('');
+  var le=S.settings.lastExport;
+  return '<h1>History</h1><div class="sub">'+items.length+(items.length===1?' activity':' activities')+' logged.</div>'+
+    '<h3>Backup</h3>'+
+    '<div class="note">Everything is stored on this phone, inside this app. Last backup: '+(le?new Date(le).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'never')+'.</div>'+
+    '<button class="btn ghost" data-act="exportData">Back up data</button>'+
+    '<button class="btn ghost" data-act="importData">Restore from backup</button>'+
+    '<button class="btn ghost" data-act="incSheet">Weight added after each lift: '+fmtNum(S.settings.inc.squat)+' lb</button>'+
+    '<h3>All activity</h3>'+(list||'<div class="empty">Nothing logged yet.</div>');
+}
+
+/* ---------- render ---------- */
+var app=document.getElementById('app'),nav=document.getElementById('nav'),sheetEl=document.getElementById('sheet');
+function render(){
+  var v={today:vToday,lift:vLift,run:vRun,ride:vRide,history:vHistory}[ui.tab]();
+  app.innerHTML=v;
+  Array.prototype.forEach.call(nav.querySelectorAll('button'),function(b){b.setAttribute('aria-current',String(b.dataset.tab===ui.tab));});
+  tick();syncWake();
+}
+
+/* ---------- rest timer ---------- */
+function tick(){
+  var el=document.getElementById('rest');if(!el||!S.active)return;
+  var a=S.active,all=a.ex.every(function(e){return e.done.every(Boolean);});
+  var t=el.querySelector('.time'),m=el.querySelector('.msg'),f=el.querySelector('.fill');
+  el.classList.remove('amber','go');
+  if(!a.rest){t.textContent='0:00';m.textContent='Mark a set when you finish it. The rest timer starts then.';f.style.width='0';return;}
+  var s=Math.max(0,Math.floor((Date.now()-a.rest)/1000));
+  t.textContent=fmtDur(s);f.style.width=Math.min(100,s/300*100)+'%';
+  if(s>=300){el.classList.add('go');m.textContent=all?'5 minutes reached. All sets are done.':'5 minutes reached.';}
+  else if(s>=180){el.classList.add('amber');m.textContent='3 minutes reached. Go when you feel ready.';}
+  else m.textContent=all?'All sets are done. Finish the workout when ready.':'Resting. 3:00 is the minimum.';
+}
+setInterval(tick,250);
+
+/* ---------- screen wake lock (best effort) ---------- */
+var wake=null;
+function syncWake(){
+  try{
+    if(!('wakeLock' in navigator))return;
+    if(S.active&&ui.tab==='lift'&&document.visibilityState==='visible'){
+      if(!wake){wake='pending';navigator.wakeLock.request('screen').then(function(l){wake=l;l.addEventListener('release',function(){wake=null;});}).catch(function(){wake=null;});}
+    }else if(wake&&wake!=='pending'){wake.release();wake=null;}
+  }catch(e){wake=null;}
+}
+document.addEventListener('visibilitychange',function(){tick();syncWake();});
+
+/* ---------- sheets ---------- */
+function openSheet(html){sheetEl.innerHTML='<div class="panel">'+html+'</div>';sheetEl.classList.add('on');}
+function closeSheet(){sheetEl.classList.remove('on');sheetEl.innerHTML='';ui.sheet=null;ui.confirm=null;}
+function ask(msg,ok,fn,danger){
+  ui.confirm=fn;
+  openSheet('<h2>'+esc(msg)+'</h2><button class="btn '+(danger?'danger':'')+'" data-act="confirmOk">'+esc(ok)+'</button><button class="btn ghost" data-act="close">Cancel</button>');
+}
+function toast(msg){
+  var t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);
+  setTimeout(function(){t.remove();},2600);
+}
+
+function weightSheet(label,val){
+  openSheet('<h2>'+esc(label)+'</h2><label for="f-w">Weight (lb)</label><input id="f-w" inputmode="decimal" value="'+fmtW(val)+'">'+
+    '<div class="stepper"><button class="btn ghost" style="margin:0" data-act="wstep" data-d="-5">\u2212 5</button><button class="btn ghost" style="margin:0" data-act="wstep" data-d="5">+ 5</button></div>'+
+    '<button class="btn" data-act="saveWeight">Save weight</button><button class="btn ghost" data-act="close">Cancel</button>');
+}
+function runSheet(planId,existing){
+  var p=planId?planById(planId):null,ex=existing||(planId?doneRun(planId):null);
+  ui.sheet={kind:'run',planId:planId||null,id:ex?ex.id:null};
+  var mi=ex?ex.miles:(p?p.mi:''),secs=ex?ex.secs:0,date=ex?ex.date:today();
+  openSheet('<h2>'+(p?esc(p.t)+(p.t==='Race'?'':' run'):'Log a run')+'</h2>'+(p?'<div class="note">'+esc(p.note)+'</div>':'')+
+    '<label for="f-date">Date</label><input id="f-date" type="date" value="'+date+'">'+
+    '<label for="f-mi">Distance (miles)</label><input id="f-mi" inputmode="decimal" value="'+(mi===''?'':fmtNum(mi))+'">'+
+    '<div class="row2"><div><label for="f-min">Minutes</label><input id="f-min" inputmode="numeric" value="'+(secs?Math.floor(secs/60):'')+'"></div>'+
+    '<div><label for="f-sec">Seconds</label><input id="f-sec" inputmode="numeric" value="'+(secs?pad(secs%60):'')+'"></div></div>'+
+    '<div class="pace" id="pace"></div>'+
+    '<button class="btn run" data-act="saveRun">Save run</button>'+
+    (ex?'<button class="btn danger" data-act="delRunFromSheet">Delete this run</button>':'')+
+    '<button class="btn ghost" data-act="close">Cancel</button>');
+  updatePace();
+}
+function readTime(){
+  var m=num(document.getElementById('f-min').value),s=num(document.getElementById('f-sec').value);
+  if(!isFinite(m))m=0;if(!isFinite(s))s=0;return Math.round(m*60+s);
+}
+function updatePace(){
+  var el=document.getElementById('pace');if(!el)return;
+  var mi=num(document.getElementById('f-mi').value),secs=readTime(),p=paceOf(mi,secs);
+  el.textContent=p?p+' per mile':'';
+}
+function rideSheet(){
+  openSheet('<h2>Log a ride</h2><label for="f-date">Date</label><input id="f-date" type="date" value="'+today()+'">'+
+    '<div class="row2"><div><label for="f-rmin">Minutes (optional)</label><input id="f-rmin" inputmode="numeric"></div>'+
+    '<div><label for="f-kj">Output, kJ (optional)</label><input id="f-kj" inputmode="numeric"></div></div>'+
+    '<button class="btn ride" data-act="saveRide">Save ride</button><button class="btn ghost" data-act="close">Cancel</button>');
+}
+function exportSheet(){
+  var json=JSON.stringify(S,null,1);
+  openSheet('<h2>Back up data</h2><div class="note">Copy this text and paste it into Notes, Files, or an email to yourself. To restore later, paste it back under Restore from backup.</div>'+
+    '<textarea id="f-json" readonly>'+esc(json)+'</textarea>'+
+    '<button class="btn" data-act="copyExport">Copy to clipboard</button>'+
+    (navigator.share?'<button class="btn ghost" data-act="shareExport">Share or save as file\u2026</button>':'')+
+    '<button class="btn ghost" data-act="close">Close</button>');
+}
+
+/* ---------- actions ---------- */
+function markExported(){S.settings.lastExport=Date.now();save();}
+var A={
+  tab:function(d){ui.tab=d.tab;window.scrollTo(0,0);render();},
+  close:function(){closeSheet();},
+  confirmOk:function(){var f=ui.confirm;closeSheet();if(f)f();},
+
+  swap:function(){S.settings.next=S.settings.next==='A'?'B':'A';save();render();},
+  start:function(){
+    var t=S.settings.next;
+    S.active={type:t,startedAt:Date.now(),date:today(),rest:null,
+      ex:WORKOUTS[t].map(function(k){var d=[];for(var i=0;i<SETS[k];i++)d.push(false);return {k:k,w:S.settings.weights[k],done:d};})};
+    save();render();window.scrollTo(0,0);
+  },
+  set:function(d){
+    var a=S.active;if(!a)return;var e=a.ex[+d.i],j=+d.j;e.done[j]=!e.done[j];
+    if(e.done[j])a.rest=Date.now();
+    else if(!a.ex.some(function(x){return x.done.some(Boolean);}))a.rest=null;
+    save();render();
+  },
+  editWeight:function(d){
+    if(d.i!==undefined&&S.active){var e=S.active.ex[+d.i];ui.sheet={kind:'w',i:+d.i};weightSheet(LIFTS[e.k],e.w);}
+    else{ui.sheet={kind:'w',k:d.k};weightSheet(LIFTS[d.k],S.settings.weights[d.k]);}
+  },
+  wstep:function(d){
+    var inp=document.getElementById('f-w'),v=num(inp.value);if(!isFinite(v))v=0;
+    inp.value=fmtW(Math.max(0,v+Number(d.d)));
+  },
+  saveWeight:function(){
+    var v=num(document.getElementById('f-w').value);
+    if(!isFinite(v)||v<0){toast('Enter a weight in pounds.');return;}
+    var s=ui.sheet;
+    if(s.i!==undefined&&S.active)S.active.ex[s.i].w=v;else S.settings.weights[s.k]=v;
+    save();closeSheet();render();
+  },
+  finish:function(){
+    var a=S.active;if(!a)return;
+    var all=a.ex.every(function(e){return e.done.every(Boolean);});
+    var go=function(){
+      var rec={id:uid(),date:a.date,type:a.type,at:Date.now(),dur:Math.round((Date.now()-a.startedAt)/1000),
+        ex:a.ex.map(function(e){return {k:e.k,w:e.w,done:e.done.slice()};})};
+      if(!rec.ex.some(function(e){return e.done.some(Boolean);})){toast('No sets were marked, so nothing was saved.');S.active=null;save();render();return;}
+      S.lifts.push(rec);
+      a.ex.forEach(function(e){S.settings.weights[e.k]=e.done.every(Boolean)?e.w+S.settings.inc[e.k]:e.w;});
+      S.settings.next=a.type==='A'?'B':'A';
+      S.active=null;save();render();toast('Workout saved.');
+    };
+    if(all)go();else ask('Some sets are not marked. Save anyway? Those exercises keep the same weight next time.','Save workout',go);
+  },
+  cancelWorkout:function(){ask('Discard this workout? Nothing will be saved.','Discard',function(){S.active=null;save();render();},true);},
+
+  logRun:function(d){runSheet(d.plan||null);},
+  saveRun:function(){
+    var mi=num(document.getElementById('f-mi').value),secs=readTime(),date=document.getElementById('f-date').value;
+    if(!(mi>0)){toast('Enter the distance in miles.');return;}
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(date)){toast('Pick a date.');return;}
+    var s=ui.sheet,ex=s.id?S.runs.filter(function(r){return r.id===s.id;})[0]:null;
+    if(ex){ex.miles=mi;ex.secs=secs;ex.date=date;}
+    else S.runs.push({id:uid(),date:date,miles:mi,secs:secs,planId:s.planId||null,at:Date.now()});
+    save();closeSheet();render();
+  },
+  delRunFromSheet:function(){
+    var id=ui.sheet&&ui.sheet.id;
+    ask('Delete this run?','Delete',function(){S.runs=S.runs.filter(function(r){return r.id!==id;});save();render();},true);
+  },
+  logRide:function(){rideSheet();},
+  saveRide:function(){
+    var date=document.getElementById('f-date').value,m=num(document.getElementById('f-rmin').value),k=num(document.getElementById('f-kj').value);
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(date)){toast('Pick a date.');return;}
+    S.rides.push({id:uid(),date:date,mins:isFinite(m)&&m>0?m:0,kj:isFinite(k)&&k>0?k:0,at:Date.now()});
+    save();closeSheet();render();
+  },
+  del:function(d){
+    var msg=d.kind==='lift'?'Delete this workout? Your next-workout weights will not change.':'Delete this entry?';
+    ask(msg,'Delete',function(){
+      if(d.kind==='lift')S.lifts=S.lifts.filter(function(x){return x.id!==d.id;});
+      if(d.kind==='run')S.runs=S.runs.filter(function(x){return x.id!==d.id;});
+      if(d.kind==='ride')S.rides=S.rides.filter(function(x){return x.id!==d.id;});
+      save();render();
+    },true);
+  },
+  incSheet:function(){
+    ui.sheet={kind:'inc'};
+    openSheet('<h2>Weight added after each lift</h2><div class="note">Added to an exercise next time, when every set of it was marked done.</div>'+
+      '<label for="f-inc">Pounds</label><input id="f-inc" inputmode="decimal" value="'+fmtNum(S.settings.inc.squat)+'">'+
+      '<button class="btn" data-act="saveInc">Save</button><button class="btn ghost" data-act="close">Cancel</button>');
+  },
+  saveInc:function(){
+    var v=num(document.getElementById('f-inc').value);
+    if(!isFinite(v)||v<0){toast('Enter a number of pounds.');return;}
+    KEYS.forEach(function(k){S.settings.inc[k]=v;});save();closeSheet();render();
+  },
+
+  exportData:function(){exportSheet();},
+  copyExport:function(){
+    var ta=document.getElementById('f-json'),text=ta.value;
+    var ok=function(){markExported();toast('Copied.');};
+    var fallback=function(){ta.removeAttribute('readonly');ta.select();ta.setSelectionRange(0,text.length);
+      try{if(document.execCommand('copy'))ok();else toast('Press and hold the text to copy it.');}catch(e){toast('Press and hold the text to copy it.');}
+      ta.setAttribute('readonly','');};
+    if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(text).then(ok,fallback);else fallback();
+  },
+  shareExport:function(){
+    var text=document.getElementById('f-json').value,name='train-backup-'+today()+'.json';
+    try{
+      var file=new File([text],name,{type:'application/json'});
+      var p=(navigator.canShare&&navigator.canShare({files:[file]}))?navigator.share({files:[file],title:name}):navigator.share({title:name,text:text});
+      p.then(markExported).catch(function(){});
+    }catch(e){toast('Sharing is not available. Use Copy instead.');}
+  },
+  importData:function(){
+    openSheet('<h2>Restore from backup</h2><div class="note">Paste the backup text below. This replaces everything currently on this phone.</div>'+
+      '<textarea id="f-json" placeholder="Paste backup text here"></textarea>'+
+      '<button class="btn" data-act="doImport">Restore</button><button class="btn ghost" data-act="close">Cancel</button>');
+  },
+  doImport:function(){
+    var text=document.getElementById('f-json').value.trim(),data;
+    try{data=coerce(JSON.parse(text));}catch(e){toast('That text is not a valid backup.');return;}
+    ask('Replace everything on this phone with this backup ('+(data.lifts.length+data.runs.length+data.rides.length)+' activities)?','Replace data',function(){
+      S=data;S.active=null;save();render();toast('Backup restored.');
+    },true);
+  }
+};
+
+document.addEventListener('click',function(e){
+  if(e.target===sheetEl){closeSheet();return;}
+  var el=e.target.closest('[data-act]');if(!el)return;
+  var f=A[el.dataset.act];if(f)f(el.dataset,el);
+});
+document.addEventListener('input',function(e){
+  var id=e.target&&e.target.id;
+  if(id==='f-mi'||id==='f-min'||id==='f-sec')updatePace();
+});
+document.addEventListener('toggle',function(e){
+  var d=e.target;if(d&&d.dataset&&d.dataset.week!==undefined){if(d.open)ui.open[d.dataset.week]=1;else delete ui.open[d.dataset.week];}
+},true);
+
+/* ---------- start ---------- */
+try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist();}catch(e){}
+try{if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))navigator.serviceWorker.register('sw.js');}catch(e){}
+if(S.active)ui.tab='lift';
+render();
+})();
+</script>
+</body>
+</html>
