@@ -147,6 +147,39 @@ summary .wn{font:650 18px ui-serif,"New York",Georgia,serif}
 .item .x span{margin-right:12px;white-space:nowrap}
 .item .del{appearance:none;background:none;border:0;color:var(--ink2);font-size:14px;padding:4px 0 4px 8px;text-decoration:underline}
 .empty{padding:22px 0;color:var(--ink2)}
+
+/* goal card */
+.goal{margin-top:26px;border-radius:24px;overflow:hidden;color:#fff;background:#12232E}
+.sky{position:relative;height:232px;padding:18px 20px 0;overflow:hidden;
+  background:linear-gradient(180deg,#2A2878 0%,#A8327F 50%,#EE5F45 80%,#F7B23B 100%)}
+.sun{position:absolute;left:50%;bottom:-66px;width:132px;height:132px;margin-left:-66px;border-radius:50%;
+  background:radial-gradient(circle at 50% 40%,#FFF0B8 0%,#FFCB5C 60%,#FFA83A 100%);
+  box-shadow:0 0 0 12px rgba(255,214,120,.22),0 0 0 26px rgba(255,214,120,.10)}
+.gtitle{position:relative;font:650 23px/1.1 ui-serif,"New York",Georgia,serif}
+.gdate{position:relative;font-size:14px;margin-top:3px;opacity:.92}
+.grow{position:relative;display:flex;justify-content:space-between;align-items:flex-start;margin-top:14px}
+.gnum{font:700 84px/.9 ui-serif,"New York",Georgia,serif;letter-spacing:-.03em;font-variant-numeric:lining-nums}
+.gnum.sm{font-size:58px}
+.glab{font-size:15px;font-weight:650;margin-top:8px}
+.bib{position:relative;width:112px;background:#FFF8EC;color:#12232E;border-radius:6px;padding:12px 10px 10px;
+  text-align:center;transform:rotate(4deg);box-shadow:0 8px 16px rgba(20,10,40,.4);margin-right:2px}
+.bib .h{position:absolute;width:6px;height:6px;border-radius:50%;background:#A8327F;opacity:.55}
+.bib .h.a{left:6px;top:6px}.bib .h.b{right:6px;top:6px}.bib .h.c{left:6px;bottom:6px}.bib .h.d{right:6px;bottom:6px}
+.bib .bn{font:700 38px/1 ui-serif,"New York",Georgia,serif;margin-top:6px}
+.bib .bt{font:700 25px/1 ui-serif,"New York",Georgia,serif}
+.bib .bl{font-size:12px;font-weight:650;color:#52626D}
+.bib hr{border:0;border-top:1.5px dashed #C9C2B4;margin:7px 0}
+.ground{padding:14px 20px 18px}
+.road{position:relative;height:8px;border-radius:4px;background:rgba(255,255,255,.18);margin:22px 4px 0 0}
+.road>i{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,#A8327F,#F7B23B)}
+.runner{position:absolute;top:50%;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;background:#fff;
+  display:grid;place-items:center;box-shadow:0 0 0 4px rgba(255,255,255,.22)}
+.flag{position:absolute;right:-3px;top:-24px;width:20px;height:20px}
+.flag svg{display:block}
+.rl{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;opacity:.8;margin-top:10px}
+.gstats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:16px}
+.gstats b{display:block;font:700 22px/1.1 ui-serif,"New York",Georgia,serif;font-variant-numeric:lining-nums}
+.gstats span{font-size:12.5px;opacity:.75}
 .lane .bar{width:5px}
 
 /* sheet */
@@ -481,12 +514,38 @@ function calSheet(){
     '<div class="cal">'+hdr+cells+'</div><div class="note">Filled dot: done. Hollow dot: coming up.</div>'+
     '<button class="btn ghost" data-act="close">Close</button>');
 }
+var RUNNER_SVG='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#D93F5B" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="14.5" cy="4.5" r="1.8"/><path d="M5 21l4-6 3 1.5 1.5-5-3-1.2-3.5 3M13.5 10.5l3 2.5 3-.8M12 16.5l2 4.5"/></svg>';
+var FLAG_SVG='<svg viewBox="0 0 20 20" width="20" height="20"><path d="M4 2v17" stroke="#fff" stroke-width="2" stroke-linecap="round"/><path d="M5 3h12v9H5z" fill="#fff"/><path d="M5 3h4v3H5zM13 3h4v3h-4zM9 6h4v3H9zM5 9h4v3H5zM13 9h4v3h-4z" fill="#12232E"/></svg>';
+function goalHtml(){
+  var td=mid(new Date()),start=parseYmd(ANCHOR_S);
+  var days=Math.round((RACE-td)/864e5),total=Math.round((RACE-start)/864e5);
+  var pct=Math.max(0,Math.min(100,Math.round((td-start)/864e5/total*100)));
+  var doneN=S.runs.filter(function(r){return isPlanId(r.planId);}).length;
+  var miles=S.runs.reduce(function(a,r){return a+r.miles;},0);
+  var longest=S.runs.reduce(function(a,r){return Math.max(a,r.miles);},0);
+  var rd=doneRun('race'),num,lab,cls='';
+  if(days>0){num=String(days);lab=days===1?'day to go':'days to go';}
+  else if(days===0){num='0';lab='Race day. Go get it.';}
+  else{num='Done';cls=' sm';lab=(rd&&rd.secs)?'Finished in '+fmtDur(rd.secs):'Race complete';}
+  var pctLab=pct+'% of the way';
+  return '<section class="goal" aria-label="Race goal">'+
+    '<div class="sky"><div class="sun"></div>'+
+      '<div class="gtitle">Miami Half Marathon</div><div class="gdate">Sunday, Jan 31. Goal pace 8:00 per mile.</div>'+
+      '<div class="grow"><div><div class="gnum'+cls+'">'+num+'</div><div class="glab">'+esc(lab)+'</div></div>'+
+        '<div class="bib"><i class="h a"></i><i class="h b"></i><i class="h c"></i><i class="h d"></i>'+
+        '<div class="bn">13.1</div><div class="bl">miles</div><hr><div class="bt">1:45</div><div class="bl">goal time</div></div></div>'+
+    '</div>'+
+    '<div class="ground"><div class="road" role="img" aria-label="'+pctLab+' to race day"><i style="width:'+pct+'%"></i>'+
+      '<span class="runner" style="left:'+pct+'%">'+RUNNER_SVG+'</span><span class="flag">'+FLAG_SVG+'</span></div>'+
+      '<div class="rl"><span>Sep 28</span><span>'+pctLab+'</span><span>Jan 31</span></div>'+
+      '<div class="gstats"><div><b>'+doneN+' of '+PLAN.length+'</b><span>plan runs done</span></div>'+
+        '<div><b>'+fmtNum(+miles.toFixed(1))+'</b><span>miles run</span></div>'+
+        '<div><b>'+(longest?fmtNum(longest)+' mi':'none yet')+'</b><span>longest run</span></div></div></div></section>';
+}
 function vToday(){
   var now=new Date(),ts=ymd(now),st=todayState(ts);
   var main=ui.sel?panelHtml(ui.sel):heroHtml(st),chips=ui.sel?'':chipsHtml(st);
-  var days=Math.round((RACE-mid(now))/864e5);
-  var race=days>0?'<p class="sub" style="margin-top:24px"><span class="serif" style="font-size:26px;font-weight:700;color:var(--ink)">'+days+(days===1?' day':' days')+'</span><br>until the Miami Half Marathon, Sunday, Jan 31.</p>'
-    :(days===0?'<p class="serif" style="font-size:24px;margin-top:24px">Race day.</p>':'');
+  var race=goalHtml();
   var nudge='',n=S.lifts.length+S.runs.length+S.rides.length;
   if(n>=3&&(!S.settings.lastExport||Date.now()-S.settings.lastExport>30*864e5)){
     nudge='<p class="note" style="margin-top:16px">Your data lives only on this phone. <button class="link" data-act="tab" data-tab="history" style="padding:0">Make a backup copy.</button></p>';
@@ -580,11 +639,13 @@ function vRun(){
 /* ---------- views: ride, history ---------- */
 function rideStats(from){
   var r=S.rides.filter(function(x){return !from||parseYmd(x.date)>=from;});
-  return {n:r.length,mins:r.reduce(function(a,x){return a+x.mins;},0),kj:r.reduce(function(a,x){return a+x.kj;},0)};
+  var withKj=r.filter(function(x){return x.kj>0;});   // average only over rides where output was entered
+  return {n:r.length,mins:r.reduce(function(a,x){return a+x.mins;},0),
+    avgKj:withKj.length?withKj.reduce(function(a,x){return a+x.kj;},0)/withKj.length:0};
 }
 function vRide(){
   var now=new Date(),wk=rideStats(weekStart(now)),mo=rideStats(new Date(now.getFullYear(),now.getMonth(),1)),all=rideStats();
-  function block(t,s){return '<div class="stat"><div class="n">'+s.n+'</div><div class="l">'+t+(s.kj?'<br>'+Math.round(s.kj)+' kJ':'')+(s.mins?'<br>'+Math.round(s.mins)+' min':'')+'</div></div>';}
+  function block(t,s){return '<div class="stat"><div class="n">'+s.n+'</div><div class="l">'+t+(s.avgKj?'<br>'+Math.round(s.avgKj)+' kJ average':'')+(s.mins?'<br>'+Math.round(s.mins)+' min':'')+'</div></div>';}
   var list=S.rides.slice().sort(function(a,b){return b.date.localeCompare(a.date)||b.at-a.at;}).slice(0,8).map(function(r){return itemHtml('ride',r);}).join('');
   return '<h1>Ride</h1><div class="sub">One tap to log. Minutes and output are optional.</div>'+
     '<button class="btn ride" data-act="logRide">Log a ride</button>'+
