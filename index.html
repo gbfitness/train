@@ -52,20 +52,51 @@ nav button{flex:1;appearance:none;background:none;border:0;padding:6px 0;font-si
 nav button[aria-current="true"]{color:var(--c)}
 nav svg{width:25px;height:25px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 
-/* today: week strip */
-.strip{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin:18px 0 6px}
-.day{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 0 7px;border-radius:12px;border:1.5px solid transparent}
-.day.now{border-color:var(--ink)}
+/* today: hero */
+.hero{border-radius:22px;padding:22px 20px 16px;color:#fff;margin-top:16px}
+.hero.run{background:#D93F5B}.hero.lift{background:#4F46B8}.hero.bike{background:#0A7F8A}
+.hero.rest{background:#52626D}
+.hero.done{background:var(--card);color:var(--ink);border:1.5px solid var(--line)}
+.hero .hl{font-size:14px;font-weight:650;opacity:.9}
+.hero .ht{font:700 52px/1.02 ui-serif,"New York",Georgia,serif;letter-spacing:-.02em;margin:4px 0 8px}
+.hero.done .ht{font-size:34px}
+.hero .hd{font-size:17px;font-weight:600}
+.hero .hn{font-size:14px;opacity:.92;margin-top:6px}
+.hero .hbtn{appearance:none;border:0;border-radius:14px;padding:16px 18px;font-size:18px;font-weight:700;
+  width:100%;margin-top:18px;background:#fff;color:#12232E}
+.hero .hsec{display:flex;gap:20px;margin-top:6px;flex-wrap:wrap}
+.hero .hsec button{appearance:none;background:none;border:0;padding:12px 0 4px;font-size:15px;font-weight:650;
+  color:inherit;text-decoration:underline;text-underline-offset:3px}
+.chips{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:14px}
+.chips .note{margin:0 4px 0 0}
+.chip{appearance:none;display:flex;align-items:center;gap:8px;border:1.5px solid var(--line);background:var(--card);
+  border-radius:999px;padding:9px 14px;font-size:15px;font-weight:650}
+
+/* week strip + calendar */
+.stripbar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:26px}
+.stripbar .sub{flex:1;text-align:center}
+.strip{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin:10px 0 6px}
+button.day{appearance:none;background:none;color:inherit;font:inherit;display:flex;flex-direction:column;align-items:center;
+  gap:3px;padding:8px 0 7px;border-radius:12px;border:1.5px solid transparent}
+button.day.now{border-color:var(--ink2)}
+button.day.sel{background:var(--ink);color:var(--paper);border-color:var(--ink)}
 .dl{font-size:12px;color:var(--ink2);font-weight:650}
+button.day.sel .dl{color:var(--paper);opacity:.8}
 .dn{font:650 18px ui-serif,"New York",Georgia,serif}
-.dots{display:flex;gap:3px;height:8px}
-.d{width:7px;height:7px;border-radius:50%;display:block}
+.dots{display:flex;gap:3px;height:10px;align-items:center}
+.d{width:8px;height:8px;border-radius:50%;display:block}
 .d.run{background:var(--run)}.d.lift{background:var(--lift)}.d.ride{background:var(--ride)}
-.lane{display:flex;gap:14px;align-items:center;padding:16px 0;border-top:1px solid var(--line)}
-.lane .bar{align-self:stretch;width:5px;border-radius:3px;flex:none}
-.lane .txt{flex:1;min-width:0}
-.lane .ttl{font:650 20px ui-serif,"New York",Georgia,serif}
-.lane button{flex:none}
+.d.plan{background:transparent}
+.d.plan.run{border:1.5px solid var(--run)}.d.plan.lift{border:1.5px solid var(--lift)}.d.plan.ride{border:1.5px solid var(--ride)}
+.d.plan.race{border-width:2.5px;width:10px;height:10px}
+.d.rest{width:9px;height:2px;border-radius:1px;background:var(--ink2)}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin:12px 0 4px}
+.cal .ch{font-size:12px;color:var(--ink2);text-align:center;font-weight:650;padding:4px 0}
+.cell{appearance:none;background:none;color:inherit;border:1.5px solid transparent;border-radius:12px;padding:6px 0 5px;
+  display:flex;flex-direction:column;align-items:center;gap:4px;min-height:54px;font:650 17px ui-serif,"New York",Georgia,serif}
+.cell.today{background:var(--line)}
+.cell.sel{border-color:var(--ink)}
+.cell.blank{visibility:hidden}
 
 /* lifting */
 .exrow,.exhead{display:flex;align-items:center;justify-content:space-between;gap:12px}
@@ -92,7 +123,6 @@ nav svg{width:25px;height:25px;fill:none;stroke:currentColor;stroke-width:2;stro
 .marks span{position:absolute;transform:translateX(-50%)}
 
 /* running */
-.wk{padding:6px 0 4px}
 .prow{display:flex;gap:12px;align-items:flex-start;justify-content:space-between;padding:14px 0;border-top:1px solid var(--line)}
 .prow b{font:650 19px ui-serif,"New York",Georgia,serif}
 .prow.done b{color:var(--go)}
@@ -117,6 +147,7 @@ summary .wn{font:650 18px ui-serif,"New York",Georgia,serif}
 .item .x span{margin-right:12px;white-space:nowrap}
 .item .del{appearance:none;background:none;border:0;color:var(--ink2);font-size:14px;padding:4px 0 4px 8px;text-decoration:underline}
 .empty{padding:22px 0;color:var(--ink2)}
+.lane .bar{width:5px}
 
 /* sheet */
 #sheet{position:fixed;inset:0;z-index:50;display:none;align-items:flex-end;background:rgba(8,18,24,.55)}
@@ -152,9 +183,12 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,summary:focus-vi
 'use strict';
 
 /* ---------- constants ---------- */
-var KEY='train.v1';
-var START=new Date(2026,8,28);          // Monday, Sep 28, 2026 = week 1
-var RACE=new Date(2027,0,31);           // Sunday, Jan 31, 2027
+var KEY='train.v1';                      // same key as before, so existing data still loads
+var RACE=new Date(2027,0,31);            // Sunday, Jan 31, 2027
+var RACE_S='2027-01-31';
+var ANCHOR_S='2026-09-28';               // the day the rotation starts: bike (already done)
+var ROT=['bike','lift','run','lift'];    // the 4-day rotation; lift alternates A/B by itself
+var TYPES={bike:{name:'Bike',css:'ride'},lift:{name:'Lift',css:'lift'},run:{name:'Run',css:'run'}};
 var LIFTS={squat:'Squat',bench:'Bench press',row:'Barbell row',ohp:'Overhead press',deadlift:'Deadlift'};
 var WORKOUTS={A:['squat','bench','row'],B:['squat','ohp','deadlift']};
 var SETS={squat:5,bench:5,row:5,ohp:5,deadlift:1};
@@ -165,53 +199,72 @@ var NOTES={
   Easy:'Easy, conversational effort. Around 9:00 per mile or slower is fine. Effort matters more than the number.',
   Long:'Slow and steady, about 9:00 per mile (8:45 to 9:30 is fine). Walk breaks are fine.'
 };
+/* 31 runs, one per run day in the rotation. Long runs land about every 8 days. */
 var PLAN=[
-  {runs:[[E,2],[L,3]]},
-  {runs:[[E,2.5],[L,3.5]]},
-  {runs:[[E,3],[L,4]]},
-  {tag:'Cutback week',runs:[[E,2.5],[L,3.5]]},
-  {runs:[[E,3],[L,5]]},
-  {runs:[[E,3.5],[L,5.5]]},
-  {runs:[[E,2],[T,2,'Steady: 2 miles total, middle mile at about 8:30.'],[L,6]]},
-  {tag:'Cutback week',runs:[[E,2],[T,2,'Relaxed: middle mile at about 8:40.'],[L,5]]},
-  {runs:[[E,2.5],[T,2.5,'Middle 1.5 miles at about 8:20.'],[L,6.5]]},
-  {runs:[[E,3],[T,3,'Middle 2 miles at about 8:15.'],[L,7.5]]},
-  {runs:[[E,3],[T,3.5,'Middle 2 miles at about 8:10.'],[L,8.5]]},
-  {tag:'Cutback week',runs:[[E,3],[T,3,'Keep it relaxed: middle mile at about 8:20.'],[L,6]]},
-  {runs:[[E,3.5],[T,4,'Middle 2 miles at goal pace, 8:00.'],[L,9.5]]},
-  {runs:[[E,3.5],[T,4,'Middle 3 miles at goal pace, 8:00.'],[L,10.5]]},
-  {runs:[[E,3.5],[T,4,'Middle 3 miles at goal pace, 8:00.'],[L,12,'Longest run of the plan. Easy pace, about 9:00. Walk breaks are fine.']]},
-  {tag:'Step-down week',runs:[[E,3],[T,3,'Middle 2 miles at goal pace, 8:00.'],[L,9]]},
-  {tag:'Taper',runs:[[E,3],[T,2,'1 mile at goal pace, 8:00, in the middle. Short and sharp.'],[L,6]]},
-  {tag:'Race week',runs:[[E,2.5,'Easy and loose. Do this early in the week.'],['Race',13.1,'Miami Half Marathon. Goal pace 8:00 per mile, about a 1:45 finish. Go out a little slower for the first 2 miles.']]}
+  [E,3],[L,4],[E,3],[L,4.5],[E,3.5],[L,5],[E,3],[L,4,'Cutback long run. Keep it easy.'],
+  [E,3.5],[L,6],
+  [T,4,'Steady: 4 miles total, middle 2 miles at about 8:30.'],[L,6.5],
+  [T,4,'Middle 2 miles at about 8:20.'],[L,7],
+  [T,4.5,'Middle 2.5 miles at about 8:15.'],[L,5.5,'Cutback long run. Keep it easy.'],
+  [T,4,'Relaxed: middle 2 miles at about 8:15.'],[L,8],
+  [T,5,'Middle 3 miles at about 8:10.'],[L,9],
+  [T,5,'Middle 3 miles at about 8:05.'],[L,10],
+  [T,5.5,'Middle 3 miles at goal pace, 8:00.'],[L,11],
+  [T,6,'Middle 4 miles at goal pace, 8:00.'],
+  [L,12,'Longest run of the plan. Easy pace, about 9:00. Walk breaks are fine.'],
+  [T,5,'Middle 3 miles at goal pace, 8:00.'],
+  [L,9,'Step-down long run. Easy pace.'],
+  [T,4,'Middle 2 miles at goal pace, 8:00. Short and sharp.'],
+  [L,6,'Last long run before the race. Easy pace.'],
+  [E,2,'Shakeout: 2 easy miles, loose and relaxed.']
 ];
+var RACE_NOTE='Goal pace 8:00 per mile, about a 1:45 finish. Go out a little slower for the first 2 miles.';
 
 /* ---------- helpers ---------- */
 function pad(n){return String(n).padStart(2,'0');}
 function ymd(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
 function today(){return ymd(new Date());}
 function parseYmd(s){var p=s.split('-').map(Number);return new Date(p[0],p[1]-1,p[2]);}
-function weekStart(d){var x=new Date(d.getFullYear(),d.getMonth(),d.getDate());x.setDate(x.getDate()-((x.getDay()+6)%7));return x;}
+function mid(d){return new Date(d.getFullYear(),d.getMonth(),d.getDate());}
+function weekStart(d){var x=mid(d);x.setDate(x.getDate()-((x.getDay()+6)%7));return x;}
 function addDays(d,n){return new Date(d.getFullYear(),d.getMonth(),d.getDate()+n);}
 function fmtDate(s){return parseYmd(s).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});}
 function fmtShort(d){return d.toLocaleDateString('en-US',{month:'short',day:'numeric'});}
 function fmtDur(s){s=Math.round(s);var h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60;return h?h+':'+pad(m)+':'+pad(x):m+':'+pad(x);}
 function fmtNum(n){return String(+Number(n).toFixed(2));}
+function fmtW(w){return fmtNum(w);}
 function paceOf(mi,secs){if(!(mi>0)||!(secs>0))return '';var p=Math.round(secs/mi);return Math.floor(p/60)+':'+pad(p%60);}
 function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
 function num(v){var n=parseFloat(String(v).replace(',','.'));return isFinite(n)?n:NaN;}
-function planWeekIndex(d){return Math.round((weekStart(d||new Date())-START)/(7*864e5));}
 function inWeek(dateStr,ws){var d=parseYmd(dateStr);return d>=ws&&d<addDays(ws,7);}
+function tomorrowS(){return ymd(addDays(new Date(),1));}
+function isPlanId(id){return /^r\d+$/.test(id||'');}
 
 /* ---------- state ---------- */
+function initPtr(d){
+  // Where the rotation stands, worked out from the latest logged activity.
+  var last=null;
+  function see(type,x){if(!last||x.date>last.date||(x.date===last.date&&(x.at||0)>=last.at))last={type:type,date:x.date,at:x.at||0,letter:x.type};}
+  d.lifts.forEach(function(x){see('lift',x);});
+  d.runs.forEach(function(x){see('run',x);});
+  d.rides.forEach(function(x){see('bike',x);});
+  if(last){if(last.type==='bike')return 1;if(last.type==='run')return 3;return last.letter==='B'?0:2;}
+  return today()<=ANCHOR_S?0:1;
+}
+function seedBike(d){
+  // You said the rotation starts with the bike ride you did on Sep 28, so it is logged as done (delete it in History if not).
+  if(!d.rides.some(function(r){return r.date===ANCHOR_S;}))d.rides.push({id:'seed-bike',date:ANCHOR_S,mins:0,kj:0,at:0});
+}
 function fresh(){
   var w={},i={};KEYS.forEach(function(k){w[k]=45;i[k]=5;});w.deadlift=95;
-  return {v:1,settings:{weights:w,inc:i,next:'A',lastExport:null},lifts:[],runs:[],rides:[],active:null};
+  var d={v:2,settings:{weights:w,inc:i,next:'A',lastExport:null},lifts:[],runs:[],rides:[],rests:[],rot:{ptr:0},active:null};
+  seedBike(d);d.rot.ptr=initPtr(d);return d;
 }
 function coerce(o){
   if(!o||typeof o!=='object')throw new Error('bad');
   var d=fresh(),s=o.settings||{},re=/^\d{4}-\d{2}-\d{2}$/;
+  d.rides=[];                              // fresh() seeded one; rebuild from the data instead
   KEYS.forEach(function(k){
     var w=Number(s.weights&&s.weights[k]);if(isFinite(w)&&w>=0)d.settings.weights[k]=w;
     var i=Number(s.inc&&s.inc[k]);if(isFinite(i)&&i>=0)d.settings.inc[k]=i;
@@ -223,11 +276,16 @@ function coerce(o){
       ex:(Array.isArray(l.ex)?l.ex:[]).filter(function(e){return e&&LIFTS[e.k];}).map(function(e){
         return {k:e.k,w:Number(e.w)||0,done:(Array.isArray(e.done)?e.done:[]).map(Boolean)};})};});
   d.runs=(Array.isArray(o.runs)?o.runs:[]).filter(function(r){return r&&re.test(String(r.date))&&Number(r.miles)>0;}).map(function(r){
-    return {id:String(r.id||uid()),date:String(r.date),miles:Number(r.miles),secs:Number(r.secs)||0,planId:r.planId?String(r.planId):null,at:Number(r.at)||0};});
+    var pid=r.planId?String(r.planId):null;if(pid&&!isPlanId(pid)&&pid!=='race')pid=null;   // old week-based ids become extra runs
+    return {id:String(r.id||uid()),date:String(r.date),miles:Number(r.miles),secs:Number(r.secs)||0,planId:pid,at:Number(r.at)||0};});
   d.rides=(Array.isArray(o.rides)?o.rides:[]).filter(function(r){return r&&re.test(String(r.date));}).map(function(r){
     return {id:String(r.id||uid()),date:String(r.date),mins:Number(r.mins)||0,kj:Number(r.kj)||0,at:Number(r.at)||0};});
+  d.rests=(Array.isArray(o.rests)?o.rests:[]).filter(function(x){return re.test(String(x));}).map(String);
+  if((Number(o.v)||1)<2)seedBike(d);
+  var rp=o.rot?Number(o.rot.ptr):NaN;
+  d.rot={ptr:(isFinite(rp)&&rp>=0&&rp<4)?Math.floor(rp):initPtr(d)};
   var a=o.active;
-  if(a&&a.ex&&Array.isArray(a.ex)&&a.ex.every(function(e){return e&&LIFTS[e.k]&&Array.isArray(e.done);})){
+  if(a&&Array.isArray(a.ex)&&a.ex.every(function(e){return e&&LIFTS[e.k]&&Array.isArray(e.done);})){
     d.active={type:a.type==='B'?'B':'A',startedAt:Number(a.startedAt)||Date.now(),date:re.test(String(a.date))?a.date:today(),
       rest:a.rest?Number(a.rest):null,ex:a.ex.map(function(e){return {k:e.k,w:Number(e.w)||0,done:e.done.map(Boolean)};})};
   }
@@ -238,65 +296,206 @@ function load(){
   return fresh();
 }
 var S=load();
-var ui={tab:'today',open:{},confirm:null,sheet:null};
+var ui={tab:'today',open:{},confirm:null,sheet:null,sel:null,week:null,cal:null};
 function save(){
   try{localStorage.setItem(KEY,JSON.stringify(S));}
   catch(e){toast('Could not save. Storage may be full or blocked.');}
 }
 
+/* ---------- rotation ---------- */
+function nearest(type,from){for(var d=0;d<4;d++){var i=(from+d)%4;if(ROT[i]===type)return i;}return from;}
+function recent(ds){return ds===today()||ds===ymd(addDays(new Date(),-1));}
+function advance(type,dateStr){
+  // Continue the rotation from the step that was just done (only for activity from today or yesterday).
+  if(!recent(dateStr))return;
+  S.rot.ptr=(nearest(type,S.rot.ptr)+1)%4;
+}
+function doneTypesOn(ds){
+  var t=[];
+  if(S.lifts.some(function(x){return x.date===ds;}))t.push('lift');
+  if(S.runs.some(function(x){return x.date===ds;}))t.push('run');
+  if(S.rides.some(function(x){return x.date===ds;}))t.push('bike');
+  return t;
+}
+function consumed(ds){return doneTypesOn(ds).length>0||S.rests.indexOf(ds)>=0;}
+function firstFree(){var n=mid(new Date());return consumed(ymd(n))?addDays(n,1):n;}
+function clearRest(ds){S.rests=S.rests.filter(function(x){return x!==ds;});}
+
 /* ---------- plan lookups ---------- */
-function runId(wi,ri){return 'w'+(wi+1)+'r'+(ri+1);}
+function planRun(idx){
+  if(idx>=0&&idx<PLAN.length){var p=PLAN[idx];return {t:p[0],mi:p[1],note:p[2]||NOTES[p[0]]||''};}
+  return {t:'Easy',mi:3,note:NOTES.Easy};
+}
+function runTitle(idx){return idx<PLAN.length?'Run '+(idx+1)+' of '+PLAN.length:'Extra run';}
 function planById(id){
-  var m=/^w(\d+)r(\d+)$/.exec(id||'');if(!m)return null;
-  var w=PLAN[+m[1]-1];if(!w)return null;var r=w.runs[+m[2]-1];if(!r)return null;
-  return {wi:+m[1]-1,ri:+m[2]-1,t:r[0],mi:r[1],note:r[2]||NOTES[r[0]]||''};
+  if(id==='race')return {idx:-1,t:'Race',mi:13.1,note:'Miami Half Marathon. '+RACE_NOTE};
+  var m=/^r(\d+)$/.exec(id||'');if(!m)return null;
+  var idx=+m[1]-1;if(idx<0||idx>=PLAN.length)return null;
+  var r=planRun(idx);return {idx:idx,t:r.t,mi:r.mi,note:r.note};
 }
 function doneRun(id){return S.runs.filter(function(r){return r.planId===id;})[0]||null;}
-function nextRun(){
-  var wi=planWeekIndex();if(wi<0)wi=0;if(wi>=PLAN.length)return null;
-  var runs=PLAN[wi].runs;
-  for(var i=0;i<runs.length;i++){if(!doneRun(runId(wi,i)))return planById(runId(wi,i));}
-  return null;
+function lastDoneIdx(){
+  var m=-1;S.runs.forEach(function(r){if(isPlanId(r.planId))m=Math.max(m,+r.planId.slice(1)-1);});return m;
 }
 function weekMiles(ws){return S.runs.filter(function(r){return inWeek(r.date,ws);}).reduce(function(a,r){return a+r.miles;},0);}
-function planMiles(wi){return PLAN[wi].runs.reduce(function(a,r){return a+r[1];},0);}
 
-/* ---------- views ---------- */
-function vToday(){
-  var now=new Date(),ws=weekStart(now),ts=ymd(now),i,strip='';
-  for(i=0;i<7;i++){
-    var d=addDays(ws,i),ds=ymd(d);
-    var l=S.lifts.some(function(x){return x.date===ds;}),r=S.runs.some(function(x){return x.date===ds;}),b=S.rides.some(function(x){return x.date===ds;});
-    strip+='<div class="day'+(ds===ts?' now':'')+'"><span class="dl">'+'MTWTFSS'[i]+'</span><span class="dn">'+d.getDate()+'</span><span class="dots">'+
-      (r?'<i class="d run"></i>':'')+(l?'<i class="d lift"></i>':'')+(b?'<i class="d ride"></i>':'')+'</span></div>';
+/* What is due on each future day, if you follow the rotation with no more rest days.
+   Runs are matched to the plan counting back from race day, so the long runs and taper land before Jan 31. */
+var proj=null;
+function buildProj(){
+  var ff=firstFree(),days={},slots=[],ptr=S.rot.ptr,letter=S.settings.next,off=0,d;
+  for(d=ff;d<RACE;d=addDays(d,1),off++){
+    var step=ROT[(ptr+off)%4],e={step:step};
+    if(step==='lift'){e.letter=letter;letter=letter==='A'?'B':'A';}
+    if(step==='run')slots.push(ymd(d));
+    days[ymd(d)]=e;
   }
-  var a=S.active,t=S.settings.next;
-  var liftTxt=a?'Workout '+a.type+' in progress':'Workout '+t+': '+WORKOUTS[t].map(function(k){return LIFTS[k].toLowerCase()+' '+fmtNum(S.settings.weights[k]);}).join(', ');
-  var nr=nextRun(),wi=planWeekIndex();
-  var runTxt=nr?nr.t+' run, '+fmtNum(nr.mi)+' miles':(wi>=0&&wi<PLAN.length?'This week\u2019s planned runs are done.':'Log a run any time.');
-  var runSub=(wi>=0&&wi<PLAN.length)?'Week '+(wi+1)+' of '+PLAN.length:'';
-  var weekRides=S.rides.filter(function(x){return inWeek(x.date,ws);}).length;
-  var days=Math.round((RACE-new Date(now.getFullYear(),now.getMonth(),now.getDate()))/864e5);
-  var race=days>0?'<p class="sub" style="margin-top:22px"><span class="serif" style="font-size:26px;font-weight:700;color:var(--ink)">'+days+' days</span><br>until the Miami Half Marathon, Sunday, Jan 31.</p>'
-    :(days===0?'<p class="serif" style="font-size:24px;margin-top:22px">Race day.</p>':'');
-  var nudge='';
-  var n=S.lifts.length+S.runs.length+S.rides.length;
+  if(ff<=RACE)days[RACE_S]={step:'race'};
+  var N=PLAN.length,M=slots.length,base=Math.max(N-M,lastDoneIdx()+1);
+  slots.forEach(function(ds,j){days[ds].runIdx=base+j;});
+  return {days:days,slots:slots,base:base,M:M,ff:ff};
+}
+function nextRunPlanId(){return proj.base<PLAN.length?'r'+(proj.base+1):'';}
+
+function dayInfo(ds){
+  return {done:doneTypesOn(ds),rest:S.rests.indexOf(ds)>=0,plan:proj.days[ds]||null,race:ds===RACE_S};
+}
+function describe(p,withW){
+  if(p.step==='bike')return {t:'Bike',l:'Log your ride when you are done. Minutes and output are optional.'};
+  if(p.step==='lift'){
+    var ks=WORKOUTS[p.letter];
+    return {t:'Lift '+p.letter,l:ks.map(function(k){return LIFTS[k].toLowerCase()+(withW?' '+fmtW(S.settings.weights[k]):'');}).join(', ')+(withW?' (lb)':'')};
+  }
+  if(p.step==='run'){var r=planRun(p.runIdx);return {t:'Run',l:runTitle(p.runIdx)+': '+r.t+', '+fmtNum(r.mi)+' miles',n:r.note};}
+  return {t:'Race day',l:'Miami Half Marathon, 13.1 miles',n:RACE_NOTE};
+}
+function shortDesc(p){
+  if(p.step==='bike')return 'Bike';
+  if(p.step==='lift')return 'Lift '+p.letter;
+  if(p.step==='run'){var r=planRun(p.runIdx);return runTitle(p.runIdx)+' ('+r.t+', '+fmtNum(r.mi)+' mi)';}
+  return 'the race';
+}
+function heroCls(step){return step==='bike'?'bike':step==='lift'?'lift':'run';}
+
+/* ---------- views: today ---------- */
+function markers(info){
+  var h='';
+  info.done.forEach(function(t){h+='<i class="d '+TYPES[t].css+'"></i>';});
+  if(info.rest)h+='<i class="d rest"></i>';
+  if(!info.done.length&&!info.rest&&info.plan){
+    var s=info.plan.step;h+='<i class="d plan '+(s==='bike'?'ride':s==='lift'?'lift':'run')+(s==='race'?' race':'')+'"></i>';
+  }
+  return h;
+}
+function todayState(ts){
+  if(S.active)return {kind:'active'};
+  var acts=doneTypesOn(ts);if(acts.length)return {kind:'done',acts:acts};
+  if(S.rests.indexOf(ts)>=0)return {kind:'rest'};
+  var p=proj.days[ts];if(p)return {kind:'due',p:p};
+  return {kind:'over'};
+}
+function heroHtml(st){
+  var nxt=proj.days[tomorrowS()];
+  if(st.kind==='active'){
+    return '<section class="hero lift"><div class="hl">In progress</div><div class="ht">Lift '+S.active.type+'</div>'+
+      '<div class="hd">Your workout is still open.</div><button class="hbtn" data-act="heroGo" data-step="lift">Resume workout</button></section>';
+  }
+  if(st.kind==='done'){
+    var names=st.acts.map(function(t){return TYPES[t].name;}).join(' and ');
+    return '<section class="hero done"><div class="hl">Done for today</div><div class="ht">'+names+' logged</div>'+
+      (nxt?'<div class="hd">Up next: '+esc(shortDesc(nxt))+', tomorrow.</div>':'')+'</section>';
+  }
+  if(st.kind==='rest'){
+    return '<section class="hero rest"><div class="hl">Day off</div><div class="ht">Rest day</div>'+
+      '<div class="hd">Everything moves back one day.</div>'+(nxt?'<div class="hn">Tomorrow: '+esc(shortDesc(nxt))+'.</div>':'')+
+      '<button class="hbtn" data-act="undoRest">Undo rest day</button></section>';
+  }
+  if(st.kind==='over'){
+    return '<section class="hero done"><div class="hl">After the race</div><div class="ht">Plan complete</div>'+
+      '<div class="hd">You can still log any activity below.</div></section>';
+  }
+  var p=st.p,dsc=describe(p,true);
+  var btn=p.step==='lift'?'Start Lift '+p.letter:p.step==='run'?'Log run':p.step==='race'?'Log race':'Log ride';
+  var plan=p.step==='run'?(p.runIdx<PLAN.length?'r'+(p.runIdx+1):''):p.step==='race'?'race':'';
+  return '<section class="hero '+heroCls(p.step)+'"><div class="hl">Due today</div><div class="ht">'+esc(dsc.t)+'</div>'+
+    '<div class="hd">'+esc(dsc.l)+'</div>'+(dsc.n?'<div class="hn">'+esc(dsc.n)+'</div>':'')+
+    '<button class="hbtn" data-act="heroGo" data-step="'+p.step+'" data-plan="'+plan+'">'+btn+'</button>'+
+    '<div class="hsec"><button data-act="rest">Rest today</button><button data-act="chooseDue">Change what\u2019s due</button></div></section>';
+}
+function chipsHtml(st){
+  var list=[],label='Or do something else:';
+  if(st.kind==='due'){
+    if(st.p.step==='race')return '';
+    list=['bike','lift','run'].filter(function(t){return t!==st.p.step;});
+  }else if(st.kind==='done'){list=['bike','lift','run'];label='Log something else:';}
+  else if(st.kind==='rest'||st.kind==='over'){list=['bike','lift','run'];label='Log an activity anyway:';}
+  else return '';
+  return '<div class="chips"><span class="note">'+label+'</span>'+list.map(function(t){
+    return '<button class="chip" data-act="doOther" data-type="'+t+'"><i class="d '+TYPES[t].css+'"></i>'+TYPES[t].name+'</button>';}).join('')+'</div>';
+}
+function panelHtml(ds){
+  var ts=today(),info=dayInfo(ds),title=fmtDate(ds);
+  var back='<button class="link" data-act="backToday">Back to today</button>';
+  if(ds>ts){
+    if(!info.plan)return '<section class="hero done"><div class="hl">'+esc(title)+'</div><div class="ht">Nothing planned</div><div class="hd">The plan ends with the race.</div></section>'+back;
+    var dsc=describe(info.plan,false);
+    return '<section class="hero '+heroCls(info.plan.step)+'"><div class="hl">Due on '+esc(title)+'</div><div class="ht">'+esc(dsc.t)+'</div>'+
+      '<div class="hd">'+esc(dsc.l)+'</div>'+(dsc.n?'<div class="hn">'+esc(dsc.n)+'</div>':'')+
+      '<div class="hn">This assumes no more rest days or switches. If you rest or change activity, the schedule moves.</div></section>'+back;
+  }
+  var items='';
+  S.lifts.filter(function(x){return x.date===ds;}).forEach(function(x){items+=itemHtml('lift',x);});
+  S.runs.filter(function(x){return x.date===ds;}).forEach(function(x){items+=itemHtml('run',x);});
+  S.rides.filter(function(x){return x.date===ds;}).forEach(function(x){items+=itemHtml('ride',x);});
+  if(info.rest)items+=itemHtml('rest',{id:ds,date:ds});
+  return '<section class="hero done"><div class="hl">'+esc(title)+'</div><div class="ht">'+(items?'What you logged':'Nothing logged')+'</div></section>'+
+    '<div style="margin-top:6px">'+items+'</div>'+back;
+}
+function stripHtml(){
+  var now=new Date(),ts=ymd(now),ws=ui.week||weekStart(now),sel=ui.sel||ts,i,cells='';
+  for(i=0;i<7;i++){
+    var d=addDays(ws,i),ds=ymd(d),info=dayInfo(ds);
+    var lab=fmtDate(ds)+(info.done.length?': '+info.done.map(function(t){return TYPES[t].name;}).join(', ')+' logged':info.rest?': rest day':info.plan?': '+shortDesc(info.plan)+' due':'');
+    cells+='<button class="day'+(ds===ts?' now':'')+(ds===sel?' sel':'')+'" data-act="pick" data-d="'+ds+'" aria-label="'+esc(lab)+'">'+
+      '<span class="dl">'+'MTWTFSS'[i]+'</span><span class="dn">'+d.getDate()+'</span><span class="dots">'+markers(info)+'</span></button>';
+  }
+  return '<div class="stripbar"><button class="small" data-act="weekShift" data-d="-1" aria-label="Previous week">\u2039</button>'+
+    '<span class="sub">'+fmtShort(ws)+' to '+fmtShort(addDays(ws,6))+'</span>'+
+    '<button class="small" data-act="weekShift" data-d="1" aria-label="Next week">\u203a</button>'+
+    '<button class="small" data-act="openCal">Calendar</button></div>'+
+    '<div class="strip">'+cells+'</div><div class="note">Filled dot: done. Hollow dot: coming up. Tap any day to see it.</div>';
+}
+function calSheet(){
+  var ts=today(),sel=ui.sel||ts,c=ui.cal,first=new Date(c.y,c.m,1);
+  var title=first.toLocaleDateString('en-US',{month:'long',year:'numeric'});
+  var lead=(first.getDay()+6)%7,dim=new Date(c.y,c.m+1,0).getDate(),cells='',i,day;
+  for(i=0;i<lead;i++)cells+='<span class="cell blank"></span>';
+  for(day=1;day<=dim;day++){
+    var ds=ymd(new Date(c.y,c.m,day)),info=dayInfo(ds);
+    cells+='<button class="cell'+(ds===ts?' today':'')+(ds===sel?' sel':'')+'" data-act="pick" data-d="'+ds+'" data-close="1" aria-label="'+esc(fmtDate(ds))+'">'+
+      '<span>'+day+'</span><span class="dots">'+markers(info)+'</span></button>';
+  }
+  var hdr='MTWTFSS'.split('').map(function(x){return '<span class="ch">'+x+'</span>';}).join('');
+  openSheet('<div class="exhead"><button class="small" data-act="calNav" data-d="-1" aria-label="Previous month">\u2039</button><h2>'+title+'</h2>'+
+    '<button class="small" data-act="calNav" data-d="1" aria-label="Next month">\u203a</button></div>'+
+    '<div class="cal">'+hdr+cells+'</div><div class="note">Filled dot: done. Hollow dot: coming up.</div>'+
+    '<button class="btn ghost" data-act="close">Close</button>');
+}
+function vToday(){
+  var now=new Date(),ts=ymd(now),st=todayState(ts);
+  var main=ui.sel?panelHtml(ui.sel):heroHtml(st),chips=ui.sel?'':chipsHtml(st);
+  var days=Math.round((RACE-mid(now))/864e5);
+  var race=days>0?'<p class="sub" style="margin-top:24px"><span class="serif" style="font-size:26px;font-weight:700;color:var(--ink)">'+days+(days===1?' day':' days')+'</span><br>until the Miami Half Marathon, Sunday, Jan 31.</p>'
+    :(days===0?'<p class="serif" style="font-size:24px;margin-top:24px">Race day.</p>':'');
+  var nudge='',n=S.lifts.length+S.runs.length+S.rides.length;
   if(n>=3&&(!S.settings.lastExport||Date.now()-S.settings.lastExport>30*864e5)){
     nudge='<p class="note" style="margin-top:16px">Your data lives only on this phone. <button class="link" data-act="tab" data-tab="history" style="padding:0">Make a backup copy.</button></p>';
   }
   return '<h1>Today</h1><div class="sub">'+esc(now.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'}))+'</div>'+
-    '<div class="strip" aria-label="This week">'+strip+'</div>'+
-    '<div class="lane"><span class="bar" style="background:var(--lift)"></span><div class="txt"><div class="ttl">Lift</div><div class="note">'+esc(liftTxt)+'</div></div>'+
-      '<button class="small" data-act="tab" data-tab="lift">'+(a?'Resume':'Open')+'</button></div>'+
-    '<div class="lane"><span class="bar" style="background:var(--run)"></span><div class="txt"><div class="ttl">Run</div><div class="note">'+esc(runTxt)+'</div>'+(runSub?'<div class="note">'+runSub+'</div>':'')+'</div>'+
-      '<button class="small" data-act="'+(nr?'logRun':'tab')+'" data-plan="'+(nr?runId(nr.wi,nr.ri):'')+'" data-tab="run">'+(nr?'Log run':'Open')+'</button></div>'+
-    '<div class="lane"><span class="bar" style="background:var(--ride)"></span><div class="txt"><div class="ttl">Ride</div><div class="note">'+weekRides+(weekRides===1?' ride':' rides')+' this week</div></div>'+
-      '<button class="small" data-act="logRide">Log ride</button></div>'+
-    race+nudge;
+    main+chips+stripHtml()+race+nudge;
 }
 
-function fmtW(w){return fmtNum(w);}
-
+/* ---------- views: lift ---------- */
 function vLift(){
   var a=S.active;
   if(a)return workoutView(a);
@@ -330,40 +529,55 @@ function workoutView(a){
     '<button class="link" data-act="cancelWorkout">Discard this workout</button>';
 }
 
-function planSummary(wi){
-  var w=PLAN[wi],ws=addDays(START,7*wi);
-  var rows=w.runs.map(function(r,ri){
-    var id=runId(wi,ri),p=planById(id),d=doneRun(id);
-    return '<div class="prow'+(d?' done':'')+'"><div style="flex:1;min-width:0"><b>'+p.t+' '+(p.t==='Race'?'':'run ')+'\u2013 '+fmtNum(p.mi)+' mi</b>'+
-      '<div class="note">'+esc(p.note)+'</div>'+
-      (d?'<div class="done-line">Done '+fmtDate(d.date)+': '+fmtNum(d.miles)+' mi'+(d.secs?' in '+fmtDur(d.secs)+' ('+paceOf(d.miles,d.secs)+' per mile)':'')+'</div>':'')+'</div>'+
-      '<button class="small" data-act="logRun" data-plan="'+id+'">'+(d?'Edit':'Log')+'</button></div>';
-  }).join('');
-  return {rows:rows,ws:ws};
+/* ---------- views: run ---------- */
+function rowDate(idx){
+  var d=doneRun('r'+(idx+1));if(d)return d.date;
+  var j=idx-proj.base;if(j>=0&&j<proj.slots.length)return proj.slots[j];return null;
+}
+function planRow(idx){
+  var id='r'+(idx+1),r=planRun(idx),d=doneRun(id),status='';
+  if(d)status='<div class="done-line">Done '+fmtDate(d.date)+': '+fmtNum(d.miles)+' mi'+(d.secs?' in '+fmtDur(d.secs)+' ('+paceOf(d.miles,d.secs)+' per mile)':'')+'</div>';
+  else if(idx<proj.base)status='<div class="note">Dropped to stay on schedule</div>';
+  else{var dt=rowDate(idx);if(dt)status='<div class="note">Planned '+fmtDate(dt)+'</div>';}
+  return '<div class="prow'+(d?' done':'')+'"><div style="flex:1;min-width:0"><b>Run '+(idx+1)+': '+r.t+', '+fmtNum(r.mi)+' mi</b>'+
+    (PLAN[idx][2]?'<div class="note">'+esc(PLAN[idx][2])+'</div>':'')+status+'</div>'+
+    '<button class="small" data-act="logRun" data-plan="'+id+'">'+(d?'Edit':'Log')+'</button></div>';
 }
 function vRun(){
-  var wi=planWeekIndex(),cur='',ws=weekStart(new Date());
-  if(wi>=0&&wi<PLAN.length){
-    var s=planSummary(wi),done=weekMiles(ws),plan=planMiles(wi);
-    cur='<h3>This week: week '+(wi+1)+' of '+PLAN.length+(PLAN[wi].tag?', '+PLAN[wi].tag.toLowerCase():'')+'</h3>'+
-      '<div class="sub">'+fmtShort(s.ws)+' to '+fmtShort(addDays(s.ws,6))+'. '+fmtNum(done)+' of '+fmtNum(plan)+' planned miles.</div>'+
-      '<div class="meter"><i style="width:'+Math.min(100,done/plan*100)+'%"></i></div>'+s.rows;
-  }else if(wi<0){
-    cur='<p class="sub">The plan starts '+fmtShort(START)+'.</p>';
-  }else{
-    cur='<p class="sub">The plan has finished. Log any run below.</p>';
+  var N=PLAN.length,ws=weekStart(new Date()),base=proj.base,ts=today(),i;
+  var doneN=S.runs.filter(function(r){return isPlanId(r.planId);}).length,dropped=0;
+  for(i=0;i<base&&i<N;i++){if(!doneRun('r'+(i+1)))dropped++;}
+  var next='';
+  if(base<N&&proj.slots.length){
+    var r=planRun(base),sd=proj.slots[0];
+    next='<h3>Next run</h3><div class="prow"><div style="flex:1;min-width:0"><b>Run '+(base+1)+' of '+N+': '+r.t+', '+fmtNum(r.mi)+' mi</b>'+
+      '<div class="note">'+esc(r.note)+'</div><div class="note">'+(sd===ts?'Due today.':'Due '+fmtDate(sd)+' if you follow the rotation.')+'</div></div>'+
+      '<button class="small" data-act="logRun" data-plan="r'+(base+1)+'">Log</button></div>';
+  }else if(base>=N){
+    next='<p class="sub" style="margin-top:16px">You have reached the end of the plan. Log any extra run below.</p>';
   }
-  var all=PLAN.map(function(w,i){
-    var s=planSummary(i),dn=weekMiles(s.ws);
-    return '<details data-week="'+i+'"'+(ui.open[i]?' open':'')+'><summary><span class="wn">Week '+(i+1)+(w.tag?' ('+w.tag.toLowerCase()+')':'')+'</span>'+
-      '<span class="sub">'+fmtShort(s.ws)+', '+fmtNum(dn)+' of '+fmtNum(planMiles(i))+' mi</span></summary>'+s.rows+'</details>';
-  }).join('');
-  return '<h1>Run</h1><div class="sub">Miami Half Marathon, Sunday, Jan 31, 2027. Goal: 8:00 per mile, about 1:45.</div>'+cur+
+  var blocks='',b,end,rows,d0,d1,rng,key,open;
+  for(b=0;b<N;b+=8){
+    end=Math.min(N,b+8);rows='';for(i=b;i<end;i++)rows+=planRow(i);
+    d0=rowDate(b);d1=rowDate(end-1);rng=(d0&&d1)?fmtShort(parseYmd(d0))+' to '+fmtShort(parseYmd(d1)):'';
+    key='b'+b;open=ui.open[key]===undefined?(base>=b&&base<end):!!ui.open[key];
+    blocks+='<details data-key="'+key+'"'+(open?' open':'')+'><summary><span class="wn">Runs '+(b+1)+' to '+end+'</span><span class="sub">'+rng+'</span></summary>'+rows+'</details>';
+  }
+  var rd=doneRun('race');
+  var raceRow='<div class="prow"><div style="flex:1;min-width:0"><b>Race: Miami Half, 13.1 mi</b><div class="note">Sunday, Jan 31. '+esc(RACE_NOTE)+'</div>'+
+    (rd?'<div class="done-line">Done: '+fmtNum(rd.miles)+' mi'+(rd.secs?' in '+fmtDur(rd.secs)+' ('+paceOf(rd.miles,rd.secs)+' per mile)':'')+'</div>':'')+'</div>'+
+    '<button class="small" data-act="logRun" data-plan="race">'+(rd?'Edit':'Log')+'</button></div>';
+  return '<h1>Run</h1><div class="sub">Miami Half Marathon, Sunday, Jan 31, 2027. Goal: 8:00 per mile, about 1:45.</div>'+
+    '<div class="meter"><i style="width:'+Math.min(100,doneN/N*100)+'%"></i></div>'+
+    '<div class="sub">'+doneN+' of '+N+' plan runs done. '+fmtNum(weekMiles(ws))+' miles logged this week. '+proj.M+' run days left before the race.</div>'+
+    (dropped?'<p class="note" style="margin-top:8px">'+dropped+(dropped===1?' run was':' runs were')+' dropped so far. When rest days use up run days, the plan skips the earliest runs so your long runs and taper stay before race day.</p>':'')+
+    next+
     '<button class="btn ghost" data-act="logRun" data-plan="">Log an extra run</button>'+
-    '<h3>Full plan</h3>'+all+
-    '<p class="note" style="margin-top:18px">This is a general, gradual build-up, not coaching. If something hurts, skip the run and repeat the previous week\u2019s mileage. You can add a fourth run later by using the extra-run button.</p>';
+    '<h3>Full plan</h3>'+blocks+raceRow+
+    '<p class="note" style="margin-top:18px">Dates assume you follow the rotation with no more rest days, so they move when you rest or switch. This is a general, gradual build-up, not coaching. If something hurts, skip the run and tell me.</p>';
 }
 
+/* ---------- views: ride, history ---------- */
 function rideStats(from){
   var r=S.rides.filter(function(x){return !from||parseYmd(x.date)>=from;});
   return {n:r.length,mins:r.reduce(function(a,x){return a+x.mins;},0),kj:r.reduce(function(a,x){return a+x.kj;},0)};
@@ -377,33 +591,33 @@ function vRide(){
     '<div class="stats">'+block('This week',wk)+block('This month',mo)+block('All time',all)+'</div>'+
     '<h3>Recent rides</h3>'+(list||'<div class="empty">No rides yet.</div>');
 }
-
 function itemHtml(kind,x){
-  var c=kind==='lift'?'lift':kind==='run'?'run':'ride',h,body='';
+  var c=kind==='lift'?'lift':kind==='run'?'run':kind==='ride'?'ride':'ink2',h,body='';
   if(kind==='lift'){
     h='Workout '+x.type;
     body='<div class="x">'+x.ex.map(function(e){
       var n=e.done.filter(Boolean).length;
       return '<span>'+LIFTS[e.k]+' '+fmtW(e.w)+' lb, '+n+'/'+e.done.length+'</span>';}).join('')+'</div>'+(x.dur?'<div class="x"><span>'+Math.round(x.dur/60)+' min</span></div>':'');
   }else if(kind==='run'){
-    h='Run, '+fmtNum(x.miles)+' mi';
-    body='<div class="x">'+(x.secs?'<span>'+fmtDur(x.secs)+'</span><span>'+paceOf(x.miles,x.secs)+' per mile</span>':'<span>No time logged</span>')+(x.planId?'<span>From plan</span>':'')+'</div>';
-  }else{
+    h=(x.planId==='race'?'Race, ':'Run, ')+fmtNum(x.miles)+' mi';
+    body='<div class="x">'+(x.secs?'<span>'+fmtDur(x.secs)+'</span><span>'+paceOf(x.miles,x.secs)+' per mile</span>':'<span>No time logged</span>')+(isPlanId(x.planId)?'<span>Plan run '+x.planId.slice(1)+'</span>':'')+'</div>';
+  }else if(kind==='ride'){
     h='Ride';
     body='<div class="x">'+((x.mins||x.kj)?(x.mins?'<span>'+fmtNum(x.mins)+' min</span>':'')+(x.kj?'<span>'+fmtNum(x.kj)+' kJ</span>':''):'<span>Logged</span>')+'</div>';
-  }
+  }else{h='Rest day';body='<div class="x"><span>Schedule moved back a day</span></div>';}
   return '<div class="item"><span class="bar" style="background:var(--'+c+')"></span><div class="body"><div class="h">'+h+'</div><div class="x">'+fmtDate(x.date)+'</div>'+body+'</div>'+
     '<button class="del" data-act="del" data-kind="'+kind+'" data-id="'+esc(x.id)+'">Delete</button></div>';
 }
 function vHistory(){
-  var items=[];
-  S.lifts.forEach(function(x){items.push(['lift',x]);});
-  S.runs.forEach(function(x){items.push(['run',x]);});
-  S.rides.forEach(function(x){items.push(['ride',x]);});
+  var items=[],count=0;
+  S.lifts.forEach(function(x){items.push(['lift',x]);count++;});
+  S.runs.forEach(function(x){items.push(['run',x]);count++;});
+  S.rides.forEach(function(x){items.push(['ride',x]);count++;});
+  S.rests.forEach(function(ds){items.push(['rest',{id:ds,date:ds,at:0}]);});
   items.sort(function(a,b){return b[1].date.localeCompare(a[1].date)||(b[1].at||0)-(a[1].at||0);});
   var list=items.slice(0,150).map(function(p){return itemHtml(p[0],p[1]);}).join('');
   var le=S.settings.lastExport;
-  return '<h1>History</h1><div class="sub">'+items.length+(items.length===1?' activity':' activities')+' logged.</div>'+
+  return '<h1>History</h1><div class="sub">'+count+(count===1?' activity':' activities')+' logged.</div>'+
     '<h3>Backup</h3>'+
     '<div class="note">Everything is stored on this phone, inside this app. Last backup: '+(le?new Date(le).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'never')+'.</div>'+
     '<button class="btn ghost" data-act="exportData">Back up data</button>'+
@@ -415,8 +629,8 @@ function vHistory(){
 /* ---------- render ---------- */
 var app=document.getElementById('app'),nav=document.getElementById('nav'),sheetEl=document.getElementById('sheet');
 function render(){
-  var v={today:vToday,lift:vLift,run:vRun,ride:vRide,history:vHistory}[ui.tab]();
-  app.innerHTML=v;
+  proj=buildProj();
+  app.innerHTML={today:vToday,lift:vLift,run:vRun,ride:vRide,history:vHistory}[ui.tab]();
   Array.prototype.forEach.call(nav.querySelectorAll('button'),function(b){b.setAttribute('aria-current',String(b.dataset.tab===ui.tab));});
   tick();syncWake();
 }
@@ -459,7 +673,6 @@ function toast(msg){
   var t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);
   setTimeout(function(){t.remove();},2600);
 }
-
 function weightSheet(label,val){
   openSheet('<h2>'+esc(label)+'</h2><label for="f-w">Weight (lb)</label><input id="f-w" inputmode="decimal" value="'+fmtW(val)+'">'+
     '<div class="stepper"><button class="btn ghost" style="margin:0" data-act="wstep" data-d="-5">\u2212 5</button><button class="btn ghost" style="margin:0" data-act="wstep" data-d="5">+ 5</button></div>'+
@@ -469,7 +682,8 @@ function runSheet(planId,existing){
   var p=planId?planById(planId):null,ex=existing||(planId?doneRun(planId):null);
   ui.sheet={kind:'run',planId:planId||null,id:ex?ex.id:null};
   var mi=ex?ex.miles:(p?p.mi:''),secs=ex?ex.secs:0,date=ex?ex.date:today();
-  openSheet('<h2>'+(p?esc(p.t)+(p.t==='Race'?'':' run'):'Log a run')+'</h2>'+(p?'<div class="note">'+esc(p.note)+'</div>':'')+
+  var title=p?(p.t==='Race'?'Race day':runTitle(p.idx)+': '+p.t):'Log a run';
+  openSheet('<h2>'+esc(title)+'</h2>'+(p?'<div class="note">'+esc(p.note)+'</div>':'')+
     '<label for="f-date">Date</label><input id="f-date" type="date" value="'+date+'">'+
     '<label for="f-mi">Distance (miles)</label><input id="f-mi" inputmode="decimal" value="'+(mi===''?'':fmtNum(mi))+'">'+
     '<div class="row2"><div><label for="f-min">Minutes</label><input id="f-min" inputmode="numeric" value="'+(secs?Math.floor(secs/60):'')+'"></div>'+
@@ -506,17 +720,51 @@ function exportSheet(){
 
 /* ---------- actions ---------- */
 function markExported(){S.settings.lastExport=Date.now();save();}
+function startLift(){if(S.active){ui.tab='lift';render();window.scrollTo(0,0);}else A.start();}
 var A={
-  tab:function(d){ui.tab=d.tab;window.scrollTo(0,0);render();},
+  tab:function(d){ui.tab=d.tab;if(d.tab==='today'){ui.sel=null;ui.week=null;}window.scrollTo(0,0);render();},
   close:function(){closeSheet();},
   confirmOk:function(){var f=ui.confirm;closeSheet();if(f)f();},
 
+  /* today screen */
+  heroGo:function(d){
+    if(d.step==='lift')startLift();
+    else if(d.step==='run')runSheet(d.plan||'');
+    else if(d.step==='race')runSheet('race');
+    else rideSheet();
+  },
+  doOther:function(d){
+    if(d.type==='bike')rideSheet();
+    else if(d.type==='run')runSheet(nextRunPlanId());
+    else startLift();
+  },
+  rest:function(){var ts=today();if(S.rests.indexOf(ts)<0)S.rests.push(ts);save();render();},
+  undoRest:function(){clearRest(today());save();render();},
+  chooseDue:function(){
+    openSheet('<h2>What should be due next?</h2><div class="note">The rotation continues from your choice. Use this to fix the schedule or skip an activity.</div>'+
+      '<button class="btn ride" data-act="setDue" data-type="bike">Bike</button>'+
+      '<button class="btn lift" data-act="setDue" data-type="lift">Lift</button>'+
+      '<button class="btn run" data-act="setDue" data-type="run">Run</button>'+
+      '<button class="btn ghost" data-act="close">Cancel</button>');
+  },
+  setDue:function(d){S.rot.ptr=nearest(d.type,S.rot.ptr);save();closeSheet();render();},
+  pick:function(d){
+    ui.sel=(d.d===today())?null:d.d;ui.week=weekStart(parseYmd(d.d));
+    if(d.close)closeSheet();
+    render();
+  },
+  backToday:function(){ui.sel=null;ui.week=null;render();},
+  weekShift:function(d){ui.week=addDays(ui.week||weekStart(new Date()),7*Number(d.d));render();},
+  openCal:function(){var b=parseYmd(ui.sel||today());ui.cal={y:b.getFullYear(),m:b.getMonth()};calSheet();},
+  calNav:function(d){var c=ui.cal,x=new Date(c.y,c.m+Number(d.d),1);ui.cal={y:x.getFullYear(),m:x.getMonth()};calSheet();},
+
+  /* lifting */
   swap:function(){S.settings.next=S.settings.next==='A'?'B':'A';save();render();},
   start:function(){
     var t=S.settings.next;
     S.active={type:t,startedAt:Date.now(),date:today(),rest:null,
       ex:WORKOUTS[t].map(function(k){var d=[];for(var i=0;i<SETS[k];i++)d.push(false);return {k:k,w:S.settings.weights[k],done:d};})};
-    save();render();window.scrollTo(0,0);
+    ui.tab='lift';save();render();window.scrollTo(0,0);
   },
   set:function(d){
     var a=S.active;if(!a)return;var e=a.ex[+d.i],j=+d.j;e.done[j]=!e.done[j];
@@ -549,39 +797,49 @@ var A={
       S.lifts.push(rec);
       a.ex.forEach(function(e){S.settings.weights[e.k]=e.done.every(Boolean)?e.w+S.settings.inc[e.k]:e.w;});
       S.settings.next=a.type==='A'?'B':'A';
-      S.active=null;save();render();toast('Workout saved.');
+      advance('lift',a.date);clearRest(a.date);
+      S.active=null;ui.tab='today';ui.sel=null;ui.week=null;save();render();window.scrollTo(0,0);toast('Workout saved.');
     };
     if(all)go();else ask('Some sets are not marked. Save anyway? Those exercises keep the same weight next time.','Save workout',go);
   },
   cancelWorkout:function(){ask('Discard this workout? Nothing will be saved.','Discard',function(){S.active=null;save();render();},true);},
 
-  logRun:function(d){runSheet(d.plan||null);},
+  /* running */
+  logRun:function(d){runSheet(d.plan||'');},
   saveRun:function(){
     var mi=num(document.getElementById('f-mi').value),secs=readTime(),date=document.getElementById('f-date').value;
     if(!(mi>0)){toast('Enter the distance in miles.');return;}
     if(!/^\d{4}-\d{2}-\d{2}$/.test(date)){toast('Pick a date.');return;}
     var s=ui.sheet,ex=s.id?S.runs.filter(function(r){return r.id===s.id;})[0]:null;
     if(ex){ex.miles=mi;ex.secs=secs;ex.date=date;}
-    else S.runs.push({id:uid(),date:date,miles:mi,secs:secs,planId:s.planId||null,at:Date.now()});
+    else{S.runs.push({id:uid(),date:date,miles:mi,secs:secs,planId:s.planId||null,at:Date.now()});advance('run',date);}
+    clearRest(date);
     save();closeSheet();render();
   },
   delRunFromSheet:function(){
     var id=ui.sheet&&ui.sheet.id;
     ask('Delete this run?','Delete',function(){S.runs=S.runs.filter(function(r){return r.id!==id;});save();render();},true);
   },
+
+  /* riding */
   logRide:function(){rideSheet();},
   saveRide:function(){
     var date=document.getElementById('f-date').value,m=num(document.getElementById('f-rmin').value),k=num(document.getElementById('f-kj').value);
     if(!/^\d{4}-\d{2}-\d{2}$/.test(date)){toast('Pick a date.');return;}
     S.rides.push({id:uid(),date:date,mins:isFinite(m)&&m>0?m:0,kj:isFinite(k)&&k>0?k:0,at:Date.now()});
+    advance('bike',date);clearRest(date);
     save();closeSheet();render();
   },
+
+  /* history + settings */
   del:function(d){
-    var msg=d.kind==='lift'?'Delete this workout? Your next-workout weights will not change.':'Delete this entry?';
+    var msg=d.kind==='lift'?'Delete this workout? Your next-workout weights will not change.':
+      d.kind==='rest'?'Delete this rest day?':'Delete this entry? The rotation will not move back. Use Change what\u2019s due on Today if needed.';
     ask(msg,'Delete',function(){
       if(d.kind==='lift')S.lifts=S.lifts.filter(function(x){return x.id!==d.id;});
       if(d.kind==='run')S.runs=S.runs.filter(function(x){return x.id!==d.id;});
       if(d.kind==='ride')S.rides=S.rides.filter(function(x){return x.id!==d.id;});
+      if(d.kind==='rest')S.rests=S.rests.filter(function(x){return x!==d.id;});
       save();render();
     },true);
   },
@@ -596,7 +854,6 @@ var A={
     if(!isFinite(v)||v<0){toast('Enter a number of pounds.');return;}
     KEYS.forEach(function(k){S.settings.inc[k]=v;});save();closeSheet();render();
   },
-
   exportData:function(){exportSheet();},
   copyExport:function(){
     var ta=document.getElementById('f-json'),text=ta.value;
@@ -638,7 +895,7 @@ document.addEventListener('input',function(e){
   if(id==='f-mi'||id==='f-min'||id==='f-sec')updatePace();
 });
 document.addEventListener('toggle',function(e){
-  var d=e.target;if(d&&d.dataset&&d.dataset.week!==undefined){if(d.open)ui.open[d.dataset.week]=1;else delete ui.open[d.dataset.week];}
+  var d=e.target;if(d&&d.dataset&&d.dataset.key!==undefined){ui.open[d.dataset.key]=d.open?1:0;}
 },true);
 
 /* ---------- start ---------- */
