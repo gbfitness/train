@@ -24,6 +24,7 @@
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{-webkit-text-size-adjust:100%}
+*{touch-action:manipulation}
 body{margin:0;background:var(--paper);color:var(--ink);
   font:16px/1.4 -apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;
   padding-bottom:calc(84px + env(safe-area-inset-bottom));}
@@ -146,6 +147,11 @@ summary .wn{font:650 18px ui-serif,"New York",Georgia,serif}
 .item .x{color:var(--ink2);font-size:14px;margin-top:2px}
 .item .x span{margin-right:12px;white-space:nowrap}
 .item .del{appearance:none;background:none;border:0;color:var(--ink2);font-size:14px;padding:4px 0 4px 8px;text-decoration:underline}
+.item .acts{display:flex;gap:10px;flex:none}
+.edex{padding:14px 0 4px;border-top:1px solid var(--line);margin-top:14px}
+.edex .exhead label{margin:0;display:flex;align-items:center;gap:6px;font-size:15px}
+.panel .edex input{display:inline-block;width:100px;margin:0}
+.edex .sets{margin-top:10px}
 .empty{padding:22px 0;color:var(--ink2)}
 
 .banner{position:relative;aspect-ratio:3/1;min-height:100px;max-height:150px;border-radius:18px;overflow:hidden;margin:0 0 16px;background:#12232E}
@@ -167,7 +173,6 @@ summary .wn{font:650 18px ui-serif,"New York",Georgia,serif}
   box-shadow:0 10px 24px rgba(0,0,0,.22);pointer-events:none;white-space:nowrap;animation:cheer 2s ease-out forwards}
 .cheer.big{font-size:26px;padding:16px 24px;background:var(--lift)}
 @keyframes cheer{0%{opacity:0;transform:translate(-50%,16px) scale(.9)}15%{opacity:1;transform:translate(-50%,0) scale(1.05)}25%{transform:translate(-50%,0) scale(1)}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-16px)}}
-.lslink{display:inline-block;margin-top:10px;font-size:14px;font-weight:700;color:inherit;text-decoration:underline;text-underline-offset:3px}
 @media (prefers-reduced-motion: reduce){.set.pop,.ex.win,.btn.pulse{animation:none}.cheer{animation:cheerfade 2s linear forwards}}
 @keyframes cheerfade{0%,80%{opacity:1}100%{opacity:0}}
 
@@ -345,7 +350,7 @@ function seedBike(d){
 }
 function fresh(){
   var w={},i={};KEYS.forEach(function(k){w[k]=45;i[k]=5;});w.deadlift=95;
-  var d={v:2,settings:{weights:w,inc:i,next:'A',lastExport:null,lockTimer:{on:false,name:'Train Rest'}},lifts:[],runs:[],rides:[],rests:[],rot:{ptr:0},active:null};
+  var d={v:2,settings:{weights:w,inc:i,next:'A',lastExport:null},lifts:[],runs:[],rides:[],rests:[],rot:{ptr:0},active:null};
   seedBike(d);d.rot.ptr=initPtr(d);return d;
 }
 function coerce(o){
@@ -358,7 +363,6 @@ function coerce(o){
   });
   d.settings.next=s.next==='B'?'B':'A';
   d.settings.lastExport=typeof s.lastExport==='number'?s.lastExport:null;
-  var lt=s.lockTimer||{};d.settings.lockTimer={on:!!lt.on,name:(typeof lt.name==='string'&&lt.name.trim())?lt.name.trim().slice(0,60):'Train Rest'};
   d.lifts=(Array.isArray(o.lifts)?o.lifts:[]).filter(function(l){return l&&re.test(String(l.date));}).map(function(l){
     return {id:String(l.id||uid()),date:String(l.date),type:l.type==='B'?'B':'A',at:Number(l.at)||0,dur:Number(l.dur)||0,
       ex:(Array.isArray(l.ex)?l.ex:[]).filter(function(e){return e&&LIFTS[e.k];}).map(function(e){
@@ -646,7 +650,7 @@ function workoutView(a){
   }).join('');
   return '<div class="rest" id="rest" role="timer"><div class="time">0:00</div><div class="msg"></div>'+
       '<div class="track"><div class="fill"></div><div class="tick"></div></div>'+
-      '<div class="marks"><span style="left:60%">3:00</span><span style="left:calc(100% - 14px)">5:00</span></div>'+lockLink()+'</div>'+
+      '<div class="marks"><span style="left:60%">3:00</span><span style="left:calc(100% - 14px)">5:00</span></div></div>'+
     '<div class="exhead" style="margin-top:12px"><h1>Workout '+a.type+'</h1></div>'+ex+
     '<button class="btn '+(all?'go':'ghost')+'" data-act="finish">Finish workout</button>'+
     '<button class="link" data-act="cancelWorkout">Discard this workout</button>';
@@ -731,7 +735,8 @@ function itemHtml(kind,x){
     body='<div class="x">'+((x.mins||x.kj)?(x.mins?'<span>'+fmtNum(x.mins)+' min</span>':'')+(x.kj?'<span>'+fmtNum(x.kj)+' kJ</span>':''):'<span>Logged</span>')+'</div>';
   }else{h='Rest day';body='<div class="x"><span>Schedule moved back a day</span></div>';}
   return '<div class="item"><span class="bar" style="background:var(--'+c+')"></span><div class="body"><div class="h">'+h+'</div><div class="x">'+fmtDate(x.date)+'</div>'+body+'</div>'+
-    '<button class="del" data-act="del" data-kind="'+kind+'" data-id="'+esc(x.id)+'">Delete</button></div>';
+    '<span class="acts">'+(kind!=='rest'?'<button class="del" data-act="edit" data-kind="'+kind+'" data-id="'+esc(x.id)+'">Edit</button>':'')+
+    '<button class="del" data-act="del" data-kind="'+kind+'" data-id="'+esc(x.id)+'">Delete</button></span></div>';
 }
 function vHistory(){
   var items=[],count=0;
@@ -752,7 +757,6 @@ function vHistory(){
     '<button class="btn ghost" data-act="exportData">Back up data</button>'+
     '<button class="btn ghost" data-act="importData">Restore from backup</button>'+
     '<h3>Settings</h3><button class="btn ghost" data-act="incSheet">Weight added after each lift: '+fmtNum(S.settings.inc.squat)+' lb</button>'+
-    '<button class="btn ghost" data-act="lockSheet">Lock-screen timer link: '+(S.settings.lockTimer.on?'On':'Off')+'</button>'+
     '<h3>All activity</h3>'+(list||'<div class="empty">Nothing logged yet.</div>');
 }
 
@@ -817,12 +821,6 @@ function celebrate(i,j){
     burst(c.x,c.y,44,8);
     cheer(LIFTS[e.k]+' done!'+(S.settings.inc[e.k]?' +'+fmtNum(S.settings.inc[e.k])+' lb next time':''));
   }else burst(c.x,c.y,14,4.5);
-}
-
-/* ---------- lock-screen timer link (runs an iPhone Shortcut) ---------- */
-function lockLink(){
-  var lt=S.settings.lockTimer;
-  return lt&&lt.on?'<a class="lslink" href="shortcuts://run-shortcut?name='+encodeURIComponent(lt.name)+'">Start lock-screen timer</a>':'';
 }
 
 /* ---------- rehab ---------- */
@@ -1106,7 +1104,7 @@ function runSheet(planId,existing){
   var p=planId?planById(planId):null,ex=existing||(planId?doneRun(planId):null);
   ui.sheet={kind:'run',planId:planId||null,id:ex?ex.id:null};
   var mi=ex?ex.miles:(p?p.mi:''),secs=ex?ex.secs:0,date=ex?ex.date:today();
-  var title=p?(p.t==='Race'?'Race day':runTitle(p.idx)+': '+p.t):'Log a run';
+  var title=p?(p.t==='Race'?'Race day':runTitle(p.idx)+': '+p.t):(ex?'Edit run':'Log a run');
   openSheet('<h2>'+esc(title)+'</h2>'+(p?'<div class="note">'+esc(p.note)+'</div>':'')+
     '<label for="f-date">Date</label><input id="f-date" type="date" value="'+date+'">'+
     '<label for="f-mi">Distance (miles)</label><input id="f-mi" inputmode="decimal" value="'+(mi===''?'':fmtNum(mi))+'">'+
@@ -1127,11 +1125,29 @@ function updatePace(){
   var mi=num(document.getElementById('f-mi').value),secs=readTime(),p=paceOf(mi,secs);
   el.textContent=p?p+' per mile':'';
 }
-function rideSheet(){
-  openSheet('<h2>Log a ride</h2><label for="f-date">Date</label><input id="f-date" type="date" value="'+today()+'">'+
-    '<div class="row2"><div><label for="f-rmin">Minutes (optional)</label><input id="f-rmin" inputmode="numeric"></div>'+
-    '<div><label for="f-kj">Output, kJ (optional)</label><input id="f-kj" inputmode="numeric"></div></div>'+
+function rideSheet(ex){
+  ui.sheet={kind:'ride',id:ex?ex.id:null};
+  openSheet('<h2>'+(ex?'Edit ride':'Log a ride')+'</h2><label for="f-date">Date</label><input id="f-date" type="date" value="'+(ex?ex.date:today())+'">'+
+    '<div class="row2"><div><label for="f-rmin">Minutes (optional)</label><input id="f-rmin" inputmode="numeric" value="'+(ex&&ex.mins?fmtNum(ex.mins):'')+'"></div>'+
+    '<div><label for="f-kj">Output, kJ (optional)</label><input id="f-kj" inputmode="numeric" value="'+(ex&&ex.kj?fmtNum(ex.kj):'')+'"></div></div>'+
     '<button class="btn ride" data-act="saveRide">Save ride</button><button class="btn ghost" data-act="close">Cancel</button>');
+}
+function latestLiftWith(k){
+  var best=null;
+  S.lifts.forEach(function(l){if(l.ex.some(function(e){return e.k===k;})&&(!best||l.date>best.date||(l.date===best.date&&(l.at||0)>=(best.at||0))))best=l;});
+  return best;
+}
+function liftSheet(l){
+  ui.sheet={kind:'lift',id:l.id,done:l.ex.map(function(e){return e.done.slice();})};
+  openSheet('<h2>Edit Workout '+l.type+'</h2><label for="f-date">Date</label><input id="f-date" type="date" value="'+l.date+'">'+
+    l.ex.map(function(e,i){
+      return '<div class="edex"><div class="exhead"><span class="exname">'+LIFTS[e.k]+'</span>'+
+        '<label for="f-w'+i+'"><input id="f-w'+i+'" inputmode="decimal" value="'+fmtW(e.w)+'" aria-label="'+LIFTS[e.k]+' weight in pounds"> lb</label></div>'+
+        '<div class="sets">'+ui.sheet.done[i].map(function(dn,j){
+          return '<button class="set" aria-pressed="'+dn+'" aria-label="'+LIFTS[e.k]+' set '+(j+1)+'" data-act="edSet" data-i="'+i+'" data-j="'+j+'">5</button>';}).join('')+'</div></div>';
+    }).join('')+
+    '<p class="note" style="margin-top:14px">Tap a set to mark it done or not done. If this is your latest workout for an exercise, next time\u2019s weight updates to match.</p>'+
+    '<button class="btn lift" data-act="saveLift">Save workout</button><button class="btn ghost" data-act="close">Cancel</button>');
 }
 function exportSheet(){
   var json=JSON.stringify(S,null,1);
@@ -1185,24 +1201,6 @@ var A={
   /* rehab */
   rehabArea:function(d){ui.rehab={area:d.area,i:0};render();},
   rehabNav:function(d){var n=rehabList().length;ui.rehab.i=((ui.rehab.i+Number(d.d))%n+n)%n;render();},
-
-  /* lock-screen timer link */
-  lockSheet:function(){
-    var lt=S.settings.lockTimer;
-    openSheet('<h2>Lock-screen rest timer</h2>'+
-      '<div class="note">A web app cannot put its own timer on the lock screen. When this is on, the rest timer shows a link that runs an iPhone Shortcut, and the Shortcut starts a Clock timer. Clock timers do show on the lock screen.</div>'+
-      '<ol class="note" style="padding-left:20px;margin-top:10px"><li>Open the Shortcuts app and tap +.</li><li>Add the Clock action that starts a timer, and set it to 3 minutes.</li>'+
-      '<li>Name the shortcut exactly as below.</li><li>Don\u2019t add a step that opens this app\u2019s web address. That opens Safari, which keeps separate data.</li></ol>'+
-      '<label for="f-sc">Shortcut name</label><input id="f-sc" value="'+esc(lt.name)+'">'+
-      '<button class="btn" data-act="saveLock" data-on="1">'+(lt.on?'Save':'Turn on')+'</button>'+
-      (lt.on?'<button class="btn danger" data-act="saveLock" data-on="0">Turn off</button>':'')+
-      '<button class="btn ghost" data-act="close">Cancel</button>');
-  },
-  saveLock:function(d){
-    var v=(document.getElementById('f-sc').value||'').trim()||'Train Rest';
-    S.settings.lockTimer={on:d.on==='1',name:v.slice(0,60)};save();closeSheet();render();
-    toast(d.on==='1'?'Lock-screen timer link is on.':'Lock-screen timer link is off.');
-  },
 
   /* lifting */
   swap:function(){S.settings.next=S.settings.next==='A'?'B':'A';save();render();},
@@ -1273,9 +1271,34 @@ var A={
   saveRide:function(){
     var date=document.getElementById('f-date').value,m=num(document.getElementById('f-rmin').value),k=num(document.getElementById('f-kj').value);
     if(!/^\d{4}-\d{2}-\d{2}$/.test(date)){toast('Pick a date.');return;}
-    S.rides.push({id:uid(),date:date,mins:isFinite(m)&&m>0?m:0,kj:isFinite(k)&&k>0?k:0,at:Date.now()});
-    advance('bike',date);clearRest(date);
+    var sh=ui.sheet,old=sh&&sh.id?S.rides.filter(function(r){return r.id===sh.id;})[0]:null;
+    if(old){old.date=date;old.mins=isFinite(m)&&m>0?m:0;old.kj=isFinite(k)&&k>0?k:0;}
+    else{S.rides.push({id:uid(),date:date,mins:isFinite(m)&&m>0?m:0,kj:isFinite(k)&&k>0?k:0,at:Date.now()});advance('bike',date);}
+    clearRest(date);
     save();closeSheet();render();
+  },
+
+  /* editing */
+  edit:function(d){
+    if(d.kind==='lift'){var l=S.lifts.filter(function(x){return x.id===d.id;})[0];if(l)liftSheet(l);}
+    if(d.kind==='run'){var r=S.runs.filter(function(x){return x.id===d.id;})[0];if(r)runSheet(r.planId||'',r);}
+    if(d.kind==='ride'){var b=S.rides.filter(function(x){return x.id===d.id;})[0];if(b)rideSheet(b);}
+  },
+  edSet:function(d,el){
+    var sh=ui.sheet;if(!sh||sh.kind!=='lift')return;var i=+d.i,j=+d.j;
+    sh.done[i][j]=!sh.done[i][j];el.setAttribute('aria-pressed',String(sh.done[i][j]));
+  },
+  saveLift:function(){
+    var sh=ui.sheet,l=sh?S.lifts.filter(function(x){return x.id===sh.id;})[0]:null;if(!l)return;
+    var date=document.getElementById('f-date').value,ws=[],bad=false;
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(date)){toast('Pick a date.');return;}
+    l.ex.forEach(function(e,i){var v=num(document.getElementById('f-w'+i).value);if(!isFinite(v)||v<0)bad=true;ws.push(v);});
+    if(bad){toast('Enter each weight in pounds.');return;}
+    if(!sh.done.some(function(x){return x.some(Boolean);})){toast('Mark at least one set, or delete the workout instead.');return;}
+    l.date=date;
+    l.ex.forEach(function(e,i){e.w=ws[i];e.done=sh.done[i].slice();});
+    l.ex.forEach(function(e){var lt=latestLiftWith(e.k);if(lt&&lt.id===l.id)S.settings.weights[e.k]=e.done.every(Boolean)?e.w+S.settings.inc[e.k]:e.w;});
+    save();closeSheet();render();toast('Workout updated.');
   },
 
   /* history + settings */
