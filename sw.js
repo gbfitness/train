@@ -1,5 +1,5 @@
 // Network first, so updates arrive on the next open; falls back to the saved copy when offline.
-const CACHE = 'train-v7';
+const CACHE = 'train-v8';
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', e => {

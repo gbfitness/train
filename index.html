@@ -207,6 +207,9 @@ summary .wn{font:650 18px ui-serif,"New York",Georgia,serif}
 .akey i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:-1px}
 .aempty{padding:16px 0 10px;color:var(--ink2);font-size:14px}
 
+.pausebox{margin-top:14px;padding:16px 18px 18px;border-radius:18px;background:var(--card);border:1.5px solid var(--run)}
+.pausebox h3{color:var(--ink)}
+
 /* goal card */
 .goal{margin-top:26px;border-radius:24px;overflow:hidden;color:#fff;background:#12232E}
 .sky{position:relative;height:232px;padding:18px 20px 0;overflow:hidden;
@@ -332,6 +335,7 @@ function num(v){var n=parseFloat(String(v).replace(',','.'));return isFinite(n)?
 function inWeek(dateStr,ws){var d=parseYmd(dateStr);return d>=ws&&d<addDays(ws,7);}
 function tomorrowS(){return ymd(addDays(new Date(),1));}
 function isPlanId(id){return /^r\d+$/.test(id||'');}
+function isRetId(id){return /^c\d+[a-c]$/.test(id||'');}
 
 /* ---------- state ---------- */
 function initPtr(d){
@@ -350,7 +354,7 @@ function seedBike(d){
 }
 function fresh(){
   var w={},i={};KEYS.forEach(function(k){w[k]=45;i[k]=5;});w.deadlift=95;
-  var d={v:2,settings:{weights:w,inc:i,next:'A',lastExport:null},lifts:[],runs:[],rides:[],rests:[],rot:{ptr:0},active:null};
+  var d={v:2,settings:{weights:w,inc:i,next:'A',lastExport:null,runPause:{on:false,since:null},retCycle:0,retN:2},lifts:[],runs:[],rides:[],rests:[],rot:{ptr:0},active:null};
   seedBike(d);d.rot.ptr=initPtr(d);return d;
 }
 function coerce(o){
@@ -363,12 +367,14 @@ function coerce(o){
   });
   d.settings.next=s.next==='B'?'B':'A';
   d.settings.lastExport=typeof s.lastExport==='number'?s.lastExport:null;
+  var rpz=s.runPause||{};d.settings.runPause={on:!!rpz.on,since:re.test(String(rpz.since))?String(rpz.since):(rpz.on?today():null)};
+  d.settings.retCycle=Math.max(0,Math.floor(Number(s.retCycle))||0);d.settings.retN=Number(s.retN)===3?3:2;
   d.lifts=(Array.isArray(o.lifts)?o.lifts:[]).filter(function(l){return l&&re.test(String(l.date));}).map(function(l){
     return {id:String(l.id||uid()),date:String(l.date),type:l.type==='B'?'B':'A',at:Number(l.at)||0,dur:Number(l.dur)||0,
       ex:(Array.isArray(l.ex)?l.ex:[]).filter(function(e){return e&&LIFTS[e.k];}).map(function(e){
         return {k:e.k,w:Number(e.w)||0,done:(Array.isArray(e.done)?e.done:[]).map(Boolean)};})};});
   d.runs=(Array.isArray(o.runs)?o.runs:[]).filter(function(r){return r&&re.test(String(r.date))&&Number(r.miles)>0;}).map(function(r){
-    var pid=r.planId?String(r.planId):null;if(pid&&!isPlanId(pid)&&pid!=='race')pid=null;   // old week-based ids become extra runs
+    var pid=r.planId?String(r.planId):null;if(pid&&!isPlanId(pid)&&!isRetId(pid)&&pid!=='race')pid=null;   // old week-based ids become extra runs
     return {id:String(r.id||uid()),date:String(r.date),miles:Number(r.miles),secs:Number(r.secs)||0,planId:pid,at:Number(r.at)||0};});
   d.rides=(Array.isArray(o.rides)?o.rides:[]).filter(function(r){return r&&re.test(String(r.date));}).map(function(r){
     return {id:String(r.id||uid()),date:String(r.date),mins:Number(r.mins)||0,kj:Number(r.kj)||0,at:Number(r.at)||0};});
@@ -395,11 +401,14 @@ function save(){
 }
 
 /* ---------- rotation ---------- */
-function nearest(type,from){for(var d=0;d<4;d++){var i=(from+d)%4;if(ROT[i]===type)return i;}return from;}
+function paused(){return !!S.settings.runPause.on;}
+function effStep(i){var st=ROT[i%4];return (paused()&&st==='run')?'bike':st;}   // while running is paused, run days are bike days
+function nearest(type,from){for(var d=0;d<4;d++){var i=(from+d)%4;if(effStep(i)===type)return i;}return from;}
 function recent(ds){return ds===today()||ds===ymd(addDays(new Date(),-1));}
 function advance(type,dateStr){
   // Continue the rotation from the step that was just done (only for activity from today or yesterday).
   if(!recent(dateStr))return;
+  if(type==='run'&&paused())return;   // a run logged while paused does not move the rotation
   S.rot.ptr=(nearest(type,S.rot.ptr)+1)%4;
 }
 function doneTypesOn(ds){
@@ -419,11 +428,20 @@ function planRun(idx){
   return {t:'Easy',mi:3,note:NOTES.Easy};
 }
 function runTitle(idx){return idx<PLAN.length?'Run '+(idx+1)+' of '+PLAN.length:'Extra run';}
+/* Easy return runs that restart the plan after a pause. */
+var RET=[[2,'Very easy effort. Walk breaks are fine. Stop if the foot hurts.'],
+         [3,'Only do this if the first one felt fine the next day. Stop if the foot hurts.'],
+         [3,'Keep it easy. Stop if the foot hurts.']];
+function retDesc(cycle,k,n){return {id:'c'+cycle+String.fromCharCode(97+k),t:'Easy',mi:RET[k][0],note:RET[k][1],title:'Return run '+(k+1)+' of '+n,orig:-2};}
+function origDesc(idx){var r=planRun(idx);return {id:'r'+(idx+1),t:r.t,mi:r.mi,note:r.note,title:runTitle(idx),orig:idx};}
+function extraDesc(){return {id:'',t:'Easy',mi:3,note:NOTES.Easy,title:'Extra run',orig:-1};}
 function planById(id){
-  if(id==='race')return {idx:-1,t:'Race',mi:13.1,note:'Miami Half Marathon. '+RACE_NOTE};
+  if(id==='race')return {idx:-1,t:'Race',mi:13.1,note:'Miami Half Marathon. '+RACE_NOTE,title:'Race day'};
+  var mc=/^c(\d+)([a-c])$/.exec(id||'');
+  if(mc){var k=mc[2].charCodeAt(0)-97;return {idx:-2,t:'Easy',mi:RET[k][0],note:RET[k][1],title:'Return run '+(k+1)};}
   var m=/^r(\d+)$/.exec(id||'');if(!m)return null;
   var idx=+m[1]-1;if(idx<0||idx>=PLAN.length)return null;
-  var r=planRun(idx);return {idx:idx,t:r.t,mi:r.mi,note:r.note};
+  var r=planRun(idx);return {idx:idx,t:r.t,mi:r.mi,note:r.note,title:runTitle(idx)};
 }
 function doneRun(id){return S.runs.filter(function(r){return r.planId===id;})[0]||null;}
 function lastDoneIdx(){
@@ -434,37 +452,56 @@ function weekMiles(ws){return S.runs.filter(function(r){return inWeek(r.date,ws)
 /* What is due on each future day, if you follow the rotation with no more rest days.
    Runs are matched to the plan counting back from race day, so the long runs and taper land before Jan 31. */
 var proj=null;
+function retLeft(cycle,n){var out=[],k;for(k=0;k<n;k++){if(!doneRun('c'+cycle+String.fromCharCode(97+k)))out.push(retDesc(cycle,k,n));}return out;}
 function buildProj(){
-  var ff=firstFree(),days={},slots=[],ptr=S.rot.ptr,letter=S.settings.next,off=0,d;
+  var st=S.settings,pz=st.runPause.on,ff=firstFree(),days={},hyp=[],ptr=S.rot.ptr,letter=st.next,off=0,d;
   for(d=ff;d<RACE;d=addDays(d,1),off++){
-    var step=ROT[(ptr+off)%4],e={step:step};
+    var raw=ROT[(ptr+off)%4],step=(pz&&raw==='run')?'bike':raw,e={step:step};
+    if(pz&&raw==='run')e.swapped=true;
     if(step==='lift'){e.letter=letter;letter=letter==='A'?'B':'A';}
-    if(step==='run')slots.push(ymd(d));
+    if(raw==='run')hyp.push(ymd(d));           // run days as if running were on
     days[ymd(d)]=e;
   }
   if(ff<=RACE)days[RACE_S]={step:'race'};
-  var N=PLAN.length,M=slots.length,base=Math.max(N-M,lastDoneIdx()+1);
-  slots.forEach(function(ds,j){days[ds].runIdx=base+j;});
-  return {days:days,slots:slots,base:base,M:M,ff:ff};
+  var N=PLAN.length,M=hyp.length,last=lastDoneIdx()+1,retN,ret,seq=[],j;
+  if(pz){
+    // preview of resuming today: 2 or 3 easy return runs, chosen so the plan picks up on a shorter run rather than a long one
+    retN=((N-M)%2===0)?2:3;ret=[];for(j=0;j<retN;j++)ret.push(retDesc(st.retCycle+1,j,retN));
+  }else{
+    retN=st.retN;ret=st.retCycle>0?retLeft(st.retCycle,retN):[];
+  }
+  var k=Math.min(ret.length,M),m=M-k,base=Math.max(N-m,last);
+  for(j=0;j<k;j++)seq.push(ret[j]);
+  for(j=0;j<m;j++)seq.push(base+j<N?origDesc(base+j):extraDesc());
+  if(!pz)hyp.forEach(function(ds,q){days[ds].run=seq[q];});
+  return {days:days,slots:pz?[]:hyp,seq:pz?[]:seq,hypSeq:seq,hypSlots:hyp,base:base,M:pz?0:M,hypM:M,retN:retN,retK:k,ff:ff,paused:pz};
 }
-function nextRunPlanId(){return proj.base<PLAN.length?'r'+(proj.base+1):'';}
+function nextRunPlanId(){return proj.seq.length?proj.seq[0].id:'';}
+function planTotals(){
+  var done=S.runs.filter(function(r){return isPlanId(r.planId)||isRetId(r.planId);}).length;
+  var left=(proj.paused?proj.hypSeq:proj.seq).filter(function(x){return x.orig!==-1;}).length;
+  return {done:done,total:done+left};
+}
 
 function dayInfo(ds){
   return {done:doneTypesOn(ds),rest:S.rests.indexOf(ds)>=0,plan:proj.days[ds]||null,race:ds===RACE_S};
 }
 function describe(p,withW){
-  if(p.step==='bike')return {t:'Bike',l:'Log your ride when you are done. Minutes and output are optional.'};
+  if(p.step==='bike'){
+    if(p.swapped)return {t:'Bike',l:'Running is paused, so this run day is a bike day.',n:'Log your ride when you are done. Minutes and output are optional.'};
+    return {t:'Bike',l:'Log your ride when you are done. Minutes and output are optional.'};
+  }
   if(p.step==='lift'){
     var ks=WORKOUTS[p.letter];
     return {t:'Lift '+p.letter,l:ks.map(function(k){return LIFTS[k].toLowerCase()+(withW?' '+fmtW(S.settings.weights[k]):'');}).join(', ')+(withW?' (lb)':'')};
   }
-  if(p.step==='run'){var r=planRun(p.runIdx);return {t:'Run',l:runTitle(p.runIdx)+': '+r.t+', '+fmtNum(r.mi)+' miles',n:r.note};}
+  if(p.step==='run'){var r=p.run;return {t:'Run',l:r.title+': '+r.t+', '+fmtNum(r.mi)+' miles',n:r.note};}
   return {t:'Race day',l:'Miami Half Marathon, 13.1 miles',n:RACE_NOTE};
 }
 function shortDesc(p){
   if(p.step==='bike')return 'Bike';
   if(p.step==='lift')return 'Lift '+p.letter;
-  if(p.step==='run'){var r=planRun(p.runIdx);return runTitle(p.runIdx)+' ('+r.t+', '+fmtNum(r.mi)+' mi)';}
+  if(p.step==='run'){var r=p.run;return r.title+' ('+r.t+', '+fmtNum(r.mi)+' mi)';}
   return 'the race';
 }
 function heroCls(step){return step==='bike'?'bike':step==='lift'?'lift':'run';}
@@ -508,19 +545,19 @@ function heroHtml(st){
   }
   var p=st.p,dsc=describe(p,true);
   var btn=p.step==='lift'?'Start Lift '+p.letter:p.step==='run'?'Log run':p.step==='race'?'Log race':'Log ride';
-  var plan=p.step==='run'?(p.runIdx<PLAN.length?'r'+(p.runIdx+1):''):p.step==='race'?'race':'';
+  var plan=p.step==='run'?p.run.id:p.step==='race'?'race':'';
   return '<section class="hero '+heroCls(p.step)+'"><div class="hl">Due today</div><div class="ht">'+esc(dsc.t)+'</div>'+
     '<div class="hd">'+esc(dsc.l)+'</div>'+(dsc.n?'<div class="hn">'+esc(dsc.n)+'</div>':'')+
     '<button class="hbtn" data-act="heroGo" data-step="'+p.step+'" data-plan="'+plan+'">'+btn+'</button>'+
     '<div class="hsec"><button data-act="rest">Rest today</button><button data-act="chooseDue">Change what\u2019s due</button></div></section>';
 }
 function chipsHtml(st){
-  var list=[],label='Or do something else:';
+  var list=[],label='Or do something else:',all=paused()?['bike','lift']:['bike','lift','run'];
   if(st.kind==='due'){
     if(st.p.step==='race')return '';
-    list=['bike','lift','run'].filter(function(t){return t!==st.p.step;});
-  }else if(st.kind==='done'){list=['bike','lift','run'];label='Log something else:';}
-  else if(st.kind==='rest'||st.kind==='over'){list=['bike','lift','run'];label='Log an activity anyway:';}
+    list=all.filter(function(t){return t!==st.p.step;});
+  }else if(st.kind==='done'){list=all;label='Log something else:';}
+  else if(st.kind==='rest'||st.kind==='over'){list=all;label='Log an activity anyway:';}
   else return '';
   return '<div class="chips"><span class="note">'+label+'</span>'+list.map(function(t){
     return '<button class="chip" data-act="doOther" data-type="'+t+'"><i class="d '+TYPES[t].css+'"></i>'+TYPES[t].name+'</button>';}).join('')+'</div>';
@@ -579,7 +616,7 @@ function goalHtml(){
   var td=mid(new Date()),start=parseYmd(ANCHOR_S);
   var days=Math.round((RACE-td)/864e5),total=Math.round((RACE-start)/864e5);
   var pct=Math.max(0,Math.min(100,Math.round((td-start)/864e5/total*100)));
-  var doneN=S.runs.filter(function(r){return isPlanId(r.planId);}).length;
+  var tot=planTotals();
   var miles=S.runs.reduce(function(a,r){return a+r.miles;},0);
   var longest=S.runs.reduce(function(a,r){return Math.max(a,r.miles);},0);
   var rd=doneRun('race'),num,lab,cls='';
@@ -597,7 +634,7 @@ function goalHtml(){
     '<div class="ground"><div class="road" role="img" aria-label="'+pctLab+' to race day"><i style="width:'+pct+'%"></i>'+
       '<span class="runner" style="left:'+pct+'%">'+RUNNER_SVG+'</span><span class="flag">'+FLAG_SVG+'</span></div>'+
       '<div class="rl"><span>Sep 28</span><span>'+pctLab+'</span><span>Jan 31</span></div>'+
-      '<div class="gstats"><div><b>'+doneN+' of '+PLAN.length+'</b><span>plan runs done</span></div>'+
+      '<div class="gstats"><div><b>'+tot.done+' of '+tot.total+'</b><span>plan runs done</span></div>'+
         '<div><b>'+fmtNum(+miles.toFixed(1))+'</b><span>miles run</span></div>'+
         '<div><b>'+(longest?fmtNum(longest)+' mi':'none yet')+'</b><span>longest run</span></div></div></div></section>';
 }
@@ -605,12 +642,13 @@ function vToday(){
   var now=new Date(),ts=ymd(now),st=todayState(ts);
   var main=ui.sel?panelHtml(ui.sel):heroHtml(st),chips=ui.sel?'':chipsHtml(st);
   var race=goalHtml();
+  var pauseNote=paused()?'<p class="note" style="margin-top:12px">Running is paused since '+esc(fmtDate(S.settings.runPause.since||ts))+'. Run days are bike days. <button class="link" data-act="tab" data-tab="run" style="padding:0">Resume or see the plan</button></p>':'';
   var nudge='',n=S.lifts.length+S.runs.length+S.rides.length;
   if(n>=3&&(!S.settings.lastExport||Date.now()-S.settings.lastExport>30*864e5)){
     nudge='<p class="note" style="margin-top:16px">Your data lives only on this phone. <button class="link" data-act="tab" data-tab="history" style="padding:0">Make a backup copy.</button></p>';
   }
   return '<h1>Today</h1><div class="sub">'+esc(now.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'}))+'</div>'+
-    main+chips+stripHtml()+race+nudge;
+    main+chips+pauseNote+stripHtml()+race+nudge;
 }
 
 /* ---------- banners ---------- */
@@ -659,29 +697,54 @@ function workoutView(a){
 /* ---------- views: run ---------- */
 function rowDate(idx){
   var d=doneRun('r'+(idx+1));if(d)return d.date;
-  var j=idx-proj.base;if(j>=0&&j<proj.slots.length)return proj.slots[j];return null;
+  if(proj.paused)return null;
+  for(var j=0;j<proj.seq.length;j++)if(proj.seq[j].orig===idx)return proj.slots[j];
+  return null;
 }
+function doneLine(d){return '<div class="done-line">Done '+fmtDate(d.date)+': '+fmtNum(d.miles)+' mi'+(d.secs?' in '+fmtDur(d.secs)+' ('+paceOf(d.miles,d.secs)+' per mile)':'')+'</div>';}
 function planRow(idx){
   var id='r'+(idx+1),r=planRun(idx),d=doneRun(id),status='';
-  if(d)status='<div class="done-line">Done '+fmtDate(d.date)+': '+fmtNum(d.miles)+' mi'+(d.secs?' in '+fmtDur(d.secs)+' ('+paceOf(d.miles,d.secs)+' per mile)':'')+'</div>';
-  else if(idx<proj.base)status='<div class="note">Dropped to stay on schedule</div>';
+  if(d)status=doneLine(d);
+  else if(idx<proj.base)status='<div class="note">'+(proj.paused?'Would be dropped if you resume today':'Dropped to stay on schedule')+'</div>';
   else{var dt=rowDate(idx);if(dt)status='<div class="note">Planned '+fmtDate(dt)+'</div>';}
   return '<div class="prow'+(d?' done':'')+'"><div style="flex:1;min-width:0"><b>Run '+(idx+1)+': '+r.t+', '+fmtNum(r.mi)+' mi</b>'+
     (PLAN[idx][2]?'<div class="note">'+esc(PLAN[idx][2])+'</div>':'')+status+'</div>'+
     '<button class="small" data-act="logRun" data-plan="'+id+'">'+(d?'Edit':'Log')+'</button></div>';
 }
+function retRows(){
+  var c=S.settings.retCycle,n=S.settings.retN,k,h='';
+  if(!(c>0)||proj.paused)return '';
+  for(k=0;k<n;k++){
+    var id='c'+c+String.fromCharCode(97+k),d=doneRun(id),desc=retDesc(c,k,n),status='',q;
+    if(d)status=doneLine(d);
+    else for(q=0;q<proj.seq.length;q++)if(proj.seq[q].id===id){status='<div class="note">Planned '+fmtDate(proj.slots[q])+'</div>';break;}
+    h+='<div class="prow'+(d?' done':'')+'"><div style="flex:1;min-width:0"><b>'+esc(desc.title)+': Easy, '+fmtNum(desc.mi)+' mi</b>'+
+      '<div class="note">'+esc(desc.note)+'</div>'+status+'</div><button class="small" data-act="logRun" data-plan="'+id+'">'+(d?'Edit':'Log')+'</button></div>';
+  }
+  return '<h3>Return runs</h3>'+h;
+}
 function vRun(){
-  var N=PLAN.length,ws=weekStart(new Date()),base=proj.base,ts=today(),i;
-  var doneN=S.runs.filter(function(r){return isPlanId(r.planId);}).length,dropped=0;
+  var N=PLAN.length,ws=weekStart(new Date()),base=proj.base,ts=today(),i,pz=proj.paused;
+  var tot=planTotals(),dropped=0;
   for(i=0;i<base&&i<N;i++){if(!doneRun('r'+(i+1)))dropped++;}
-  var next='';
-  if(base<N&&proj.slots.length){
-    var r=planRun(base),sd=proj.slots[0];
-    next='<h3>Next run</h3><div class="prow"><div style="flex:1;min-width:0"><b>Run '+(base+1)+' of '+N+': '+r.t+', '+fmtNum(r.mi)+' mi</b>'+
-      '<div class="note">'+esc(r.note)+'</div><div class="note">'+(sd===ts?'Due today.':'Due '+fmtDate(sd)+' if you follow the rotation.')+'</div></div>'+
-      '<button class="small" data-act="logRun" data-plan="r'+(base+1)+'">Log</button></div>';
-  }else if(base>=N){
-    next='<p class="sub" style="margin-top:16px">You have reached the end of the plan. Log any extra run below.</p>';
+  var next='',pauseBox='',pauseLink='';
+  if(pz){
+    var since=S.settings.runPause.since,hs=proj.hypSeq,rn=hs.slice(0,proj.retK).map(function(x){return fmtNum(x.mi);}).join(', ');
+    var first=hs.slice(0,6).map(function(x){return '<li>'+esc(x.title)+': '+x.t+', '+fmtNum(x.mi)+' mi</li>';}).join('');
+    pauseBox='<div class="pausebox"><h2>Running is paused</h2><div class="note">Since '+esc(fmtDate(since||ts))+'. Run days are bike days until you resume.</div>'+
+      '<h3 style="margin-top:14px">If you resumed today</h3>'+
+      '<p style="margin:6px 0 0">'+proj.hypM+' run days are left before Jan 31. You would start with '+proj.retK+' easy return runs ('+rn+' miles), then pick up at Run '+(base+1)+' of '+N+'. '+
+      dropped+(dropped===1?' early run would be':' early runs would be')+' dropped to fit the time left.</p>'+
+      '<ol class="note" style="padding-left:22px;margin:8px 0 0">'+first+'</ol>'+
+      '<p class="note" style="margin-top:10px">Each extra week of rest drops about 2 more early runs. The long runs and the taper stay where they are.</p>'+
+      '<button class="btn run" data-act="resumeRun">Resume running</button></div>';
+  }else{
+    pauseLink='<button class="link" data-act="pauseRun" style="padding:8px 0 0">Pause running (injury or break)</button>';
+    var r0=proj.seq[0],sd=proj.slots[0];
+    if(r0)next='<h3>Next run</h3><div class="prow"><div style="flex:1;min-width:0"><b>'+esc(r0.title)+': '+r0.t+', '+fmtNum(r0.mi)+' mi</b>'+
+      '<div class="note">'+esc(r0.note)+'</div><div class="note">'+(sd===ts?'Due today.':'Due '+fmtDate(sd)+' if you follow the rotation.')+'</div></div>'+
+      '<button class="small" data-act="logRun" data-plan="'+r0.id+'">Log</button></div>';
+    else next='<p class="sub" style="margin-top:16px">You have reached the end of the plan. Log any extra run below.</p>';
   }
   var blocks='',b,end,rows,d0,d1,rng,key,open;
   for(b=0;b<N;b+=8){
@@ -695,10 +758,11 @@ function vRun(){
     (rd?'<div class="done-line">Done: '+fmtNum(rd.miles)+' mi'+(rd.secs?' in '+fmtDur(rd.secs)+' ('+paceOf(rd.miles,rd.secs)+' per mile)':'')+'</div>':'')+'</div>'+
     '<button class="small" data-act="logRun" data-plan="race">'+(rd?'Edit':'Log')+'</button></div>';
   return bannerHtml('run')+'<h1>Run</h1><div class="sub">Miami Half Marathon, Sunday, Jan 31, 2027. Goal: 8:00 per mile, about 1:45.</div>'+
-    '<div class="meter"><i style="width:'+Math.min(100,doneN/N*100)+'%"></i></div>'+
-    '<div class="sub">'+doneN+' of '+N+' plan runs done. '+fmtNum(weekMiles(ws))+' miles logged this week. '+proj.M+' run days left before the race.</div>'+
-    (dropped?'<p class="note" style="margin-top:8px">'+dropped+(dropped===1?' run was':' runs were')+' dropped so far. When rest days use up run days, the plan skips the earliest runs so your long runs and taper stay before race day.</p>':'')+
-    next+
+    '<div class="meter"><i style="width:'+Math.min(100,tot.total?tot.done/tot.total*100:0)+'%"></i></div>'+
+    '<div class="sub">'+tot.done+' of '+tot.total+' plan runs done. '+fmtNum(weekMiles(ws))+' miles logged this week. '+(pz?'Running is paused.':proj.M+' run days left before the race.')+'</div>'+
+    pauseLink+pauseBox+
+    (!pz&&dropped?'<p class="note" style="margin-top:8px">'+dropped+(dropped===1?' run was':' runs were')+' dropped so far. When rest days use up run days, the plan skips the earliest runs so your long runs and taper stay before race day.</p>':'')+
+    next+retRows()+
     '<button class="btn ghost" data-act="logRun" data-plan="">Log an extra run</button>'+
     '<h3>Full plan</h3>'+blocks+raceRow+
     '<p class="note" style="margin-top:18px">Dates assume you follow the rotation with no more rest days, so they move when you rest or switch. This is a general, gradual build-up, not coaching. If something hurts, skip the run and tell me.</p>';
@@ -729,7 +793,7 @@ function itemHtml(kind,x){
       return '<span>'+LIFTS[e.k]+' '+fmtW(e.w)+' lb, '+n+'/'+e.done.length+'</span>';}).join('')+'</div>'+(x.dur?'<div class="x"><span>'+Math.round(x.dur/60)+' min</span></div>':'');
   }else if(kind==='run'){
     h=(x.planId==='race'?'Race, ':'Run, ')+fmtNum(x.miles)+' mi';
-    body='<div class="x">'+(x.secs?'<span>'+fmtDur(x.secs)+'</span><span>'+paceOf(x.miles,x.secs)+' per mile</span>':'<span>No time logged</span>')+(isPlanId(x.planId)?'<span>Plan run '+x.planId.slice(1)+'</span>':'')+'</div>';
+    body='<div class="x">'+(x.secs?'<span>'+fmtDur(x.secs)+'</span><span>'+paceOf(x.miles,x.secs)+' per mile</span>':'<span>No time logged</span>')+(isPlanId(x.planId)?'<span>Plan run '+x.planId.slice(1)+'</span>':isRetId(x.planId)?'<span>Return run</span>':'')+'</div>';
   }else if(kind==='ride'){
     h='Ride';
     body='<div class="x">'+((x.mins||x.kj)?(x.mins?'<span>'+fmtNum(x.mins)+' min</span>':'')+(x.kj?'<span>'+fmtNum(x.kj)+' kJ</span>':''):'<span>Logged</span>')+'</div>';
@@ -1087,9 +1151,9 @@ document.addEventListener('visibilitychange',function(){tick();syncWake();});
 /* ---------- sheets ---------- */
 function openSheet(html){sheetEl.innerHTML='<div class="panel">'+html+'</div>';sheetEl.classList.add('on');}
 function closeSheet(){sheetEl.classList.remove('on');sheetEl.innerHTML='';ui.sheet=null;ui.confirm=null;}
-function ask(msg,ok,fn,danger){
+function ask(msg,ok,fn,danger,note){
   ui.confirm=fn;
-  openSheet('<h2>'+esc(msg)+'</h2><button class="btn '+(danger?'danger':'')+'" data-act="confirmOk">'+esc(ok)+'</button><button class="btn ghost" data-act="close">Cancel</button>');
+  openSheet('<h2>'+esc(msg)+'</h2>'+(note?'<div class="note" style="margin-top:8px">'+esc(note)+'</div>':'')+'<button class="btn '+(danger?'danger':'')+'" data-act="confirmOk">'+esc(ok)+'</button><button class="btn ghost" data-act="close">Cancel</button>');
 }
 function toast(msg){
   var t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);
@@ -1104,7 +1168,7 @@ function runSheet(planId,existing){
   var p=planId?planById(planId):null,ex=existing||(planId?doneRun(planId):null);
   ui.sheet={kind:'run',planId:planId||null,id:ex?ex.id:null};
   var mi=ex?ex.miles:(p?p.mi:''),secs=ex?ex.secs:0,date=ex?ex.date:today();
-  var title=p?(p.t==='Race'?'Race day':runTitle(p.idx)+': '+p.t):(ex?'Edit run':'Log a run');
+  var title=p?(p.t==='Race'?'Race day':(p.title||runTitle(p.idx))+': '+p.t):(ex?'Edit run':'Log a run');
   openSheet('<h2>'+esc(title)+'</h2>'+(p?'<div class="note">'+esc(p.note)+'</div>':'')+
     '<label for="f-date">Date</label><input id="f-date" type="date" value="'+date+'">'+
     '<label for="f-mi">Distance (miles)</label><input id="f-mi" inputmode="decimal" value="'+(mi===''?'':fmtNum(mi))+'">'+
@@ -1180,11 +1244,22 @@ var A={
   },
   rest:function(){var ts=today();if(S.rests.indexOf(ts)<0)S.rests.push(ts);save();render();},
   undoRest:function(){clearRest(today());save();render();},
+  pauseRun:function(){
+    ask('Pause running?','Pause running',function(){S.settings.runPause={on:true,since:today()};save();render();toast('Running paused. Run days are bike days.');},false,
+      'Run days become bike days until you resume. Nothing is deleted, and you can resume any time from the Run tab.');
+  },
+  resumeRun:function(){
+    var rn=proj.retN,k=proj.retK,base=proj.base,N=PLAN.length,dr=0,i;
+    for(i=0;i<base&&i<N;i++){if(!doneRun('r'+(i+1)))dr++;}
+    ask('Resume running?','Resume running',function(){
+      S.settings.retCycle+=1;S.settings.retN=rn;S.settings.runPause={on:false,since:null};save();render();toast('Running resumed. Start easy.');
+    },false,'The plan restarts with '+k+' easy return runs, then picks up at Run '+(base+1)+' of '+N+'. '+dr+' early runs are dropped to fit the time left. If the foot hurts, pause again.');
+  },
   chooseDue:function(){
     openSheet('<h2>What should be due next?</h2><div class="note">The rotation continues from your choice. Use this to fix the schedule or skip an activity.</div>'+
       '<button class="btn ride" data-act="setDue" data-type="bike">Bike</button>'+
       '<button class="btn lift" data-act="setDue" data-type="lift">Lift</button>'+
-      '<button class="btn run" data-act="setDue" data-type="run">Run</button>'+
+      (paused()?'':'<button class="btn run" data-act="setDue" data-type="run">Run</button>')+
       '<button class="btn ghost" data-act="close">Cancel</button>');
   },
   setDue:function(d){S.rot.ptr=nearest(d.type,S.rot.ptr);save();closeSheet();render();},
