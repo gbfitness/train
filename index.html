@@ -173,7 +173,21 @@ summary .wn{font:650 18px ui-serif,"New York",Georgia,serif}
   box-shadow:0 10px 24px rgba(0,0,0,.22);pointer-events:none;white-space:nowrap;animation:cheer 2s ease-out forwards}
 .cheer.big{font-size:26px;padding:16px 24px;background:var(--lift)}
 @keyframes cheer{0%{opacity:0;transform:translate(-50%,16px) scale(.9)}15%{opacity:1;transform:translate(-50%,0) scale(1.05)}25%{transform:translate(-50%,0) scale(1)}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-16px)}}
-@media (prefers-reduced-motion: reduce){.set.pop,.ex.win,.btn.pulse{animation:none}.cheer{animation:cheerfade 2s linear forwards}}
+/* completion card (runs, rides, finished workouts) */
+.donepop{position:fixed;left:50%;top:42%;z-index:72;transform:translate(-50%,-50%);width:min(82vw,320px);padding:22px 18px 18px;
+  border-radius:22px;background:var(--card);border:2px solid var(--c);box-shadow:0 18px 40px rgba(0,0,0,.28);text-align:center;
+  pointer-events:none;animation:dpop 2.7s ease both}
+.donepop.run{--c:var(--run);--cb:#D93F5B}.donepop.lift{--c:var(--lift);--cb:#4F46B8}.donepop.ride{--c:var(--ride);--cb:#0A7F8A}
+.donepop .chk{width:64px;height:64px;color:var(--c);display:block;margin:0 auto}
+.donepop .chk circle{stroke-dasharray:145;stroke-dashoffset:145;animation:draw .5s .1s ease-out forwards}
+.donepop .chk path{stroke-dasharray:50;stroke-dashoffset:50;animation:draw .35s .5s ease-out forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+.donepop .dt{font:700 26px/1.1 ui-serif,"New York",Georgia,serif;margin-top:10px}
+.donepop .ds{font-size:15px;color:var(--ink2);margin-top:6px}
+.donepop .db{display:inline-block;margin-top:12px;padding:5px 12px;border-radius:999px;background:var(--cb);color:#fff;font-size:13px;font-weight:700}
+@keyframes dpop{0%{opacity:0;transform:translate(-50%,-46%) scale(.8)}10%{opacity:1;transform:translate(-50%,-50%) scale(1.04)}16%{transform:translate(-50%,-50%) scale(1)}82%{opacity:1}100%{opacity:0;transform:translate(-50%,-54%) scale(.98)}}
+@media (prefers-reduced-motion: reduce){.set.pop,.ex.win,.btn.pulse{animation:none}.cheer{animation:cheerfade 2s linear forwards}
+  .donepop{animation:cheerfade 2.7s linear both;transform:translate(-50%,-50%)}.donepop .chk circle,.donepop .chk path{animation:none;stroke-dashoffset:0}}
 @keyframes cheerfade{0%,80%{opacity:1}100%{opacity:0}}
 
 /* rehab */
@@ -834,17 +848,17 @@ function fxReady(){
     fx.c=c;try{fx.ctx=c.getContext('2d');}catch(e){fx.ctx=null;}}
   return !!fx.ctx;
 }
-function burst(x,y,n,power){
-  if(!fxReady())return;
+function burst(x,y,n,power,pal){
+  if(!fxReady())return;pal=pal||FX_COLORS;
   for(var i=0;i<n;i++){var a=Math.random()*Math.PI*2,sp=power*(0.35+Math.random()*0.85);
     fx.p.push({x:x,y:y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-power*0.45,g:0.2,r:Math.random()*6,vr:(Math.random()-.5)*.4,
-      w:4+Math.random()*5,h:3+Math.random()*4,col:FX_COLORS[i%FX_COLORS.length],life:0,max:45+Math.random()*35,round:Math.random()<.4,sway:0});}
+      w:4+Math.random()*5,h:3+Math.random()*4,col:pal[i%pal.length],life:0,max:45+Math.random()*35,round:Math.random()<.4,sway:0});}
   fxRun();
 }
-function rain(n){
-  if(!fxReady())return;var W=window.innerWidth,H=window.innerHeight;
+function rain(n,pal){
+  if(!fxReady())return;pal=pal||FX_COLORS;var W=window.innerWidth,H=window.innerHeight;
   for(var i=0;i<n;i++)fx.p.push({x:Math.random()*W,y:-10-Math.random()*H*.6,vx:(Math.random()-.5)*1.5,vy:1.5+Math.random()*2.5,g:0.04,
-    r:Math.random()*6,vr:(Math.random()-.5)*.25,w:6+Math.random()*6,h:4+Math.random()*4,col:FX_COLORS[i%FX_COLORS.length],
+    r:Math.random()*6,vr:(Math.random()-.5)*.25,w:6+Math.random()*6,h:4+Math.random()*4,col:pal[i%pal.length],
     life:0,max:170+Math.random()*80,round:Math.random()<.25,sway:0.5+Math.random()});
   fxRun();
 }
@@ -870,6 +884,47 @@ function fxRun(){
 function cheer(msg,big){
   var el=document.createElement('div');el.className='cheer'+(big?' big':'');el.setAttribute('role','status');el.textContent=msg;
   document.body.appendChild(el);setTimeout(function(){el.remove();},2100);
+}
+var PAL={run:['#D93F5B','#F2803C','#F7B23B','#FFE29A','#A8327F'],ride:['#0C8F9B','#2CC0CD','#1CB0BD','#F7B23B','#4F46B8'],lift:FX_COLORS};
+var CHK_SVG='<svg class="chk" viewBox="0 0 52 52" aria-hidden="true"><circle cx="26" cy="26" r="23" fill="none" stroke="currentColor" stroke-width="3"/><path d="M15 27l8 8 14-16" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+function donePop(kind,title,sub,badge,ms){
+  var old=document.querySelector('.donepop');if(old)old.remove();
+  var el=document.createElement('div');el.className='donepop '+kind;el.setAttribute('role','status');
+  el.innerHTML=CHK_SVG+'<div class="dt">'+esc(title)+'</div>'+(sub?'<div class="ds">'+esc(sub)+'</div>':'')+(badge?'<div class="db">'+esc(badge)+'</div>':'');
+  document.body.appendChild(el);setTimeout(function(){el.remove();},ms||2800);
+}
+function fireFx(kind,level){
+  var pal=PAL[kind]||FX_COLORS,W=window.innerWidth,H=window.innerHeight;
+  burst(W*0.3,H*0.42,44,9,pal);burst(W*0.7,H*0.42,44,9,pal);
+  setTimeout(function(){rain(level>=2?110:45,pal);},180);
+  if(level>=3)setTimeout(function(){burst(W*0.5,H*0.35,70,11,FX_COLORS);rain(180,FX_COLORS);},350);
+}
+function runPriors(){
+  var tm=S.runs.filter(function(r){return r.secs>0&&r.miles>=1;});
+  return {n:S.runs.length,longest:S.runs.reduce(function(a,r){return Math.max(a,r.miles);},0),
+    fast:tm.length?Math.min.apply(null,tm.map(function(r){return r.secs/r.miles;})):0};
+}
+function celebrateRun(r,pr){
+  if(!recent(r.date)){toast('Run logged.');return;}      // backfilling old entries stays quiet
+  var pace=r.secs>0?r.secs/r.miles:0,race=r.planId==='race',ret=isRetId(r.planId),badges=[];
+  if(pr.n>0&&r.miles>pr.longest)badges.push('Longest run yet');
+  if(pace&&r.miles>=1&&pr.fast&&pace<pr.fast)badges.push('Fastest pace yet');
+  var title=race?'You finished the Miami Half!':ret?'Return run done!':'Run done!';
+  var sub=fmtNum(r.miles)+' mi'+(r.secs?' in '+fmtDur(r.secs)+', '+fmtPace(pace)+' per mile':'')+(ret?'. Nice and easy.':'');
+  donePop('run',title,sub,badges[0]||(race?'13.1 miles':''),race?4500:2800);
+  fireFx('run',race?3:(badges.length||isPlanId(r.planId))?2:1);
+}
+function celebrateRide(r,bestKj){
+  if(!recent(r.date)){toast('Ride logged.');return;}
+  var parts=[];if(r.mins)parts.push(fmtNum(r.mins)+' min');if(r.kj)parts.push(fmtNum(r.kj)+' kJ');
+  var badge=(r.kj>0&&bestKj>0&&r.kj>bestKj)?'Best output yet':'';
+  donePop('ride','Ride done!',parts.length?parts.join(', '):'Nice work.',badge,2800);
+  fireFx('ride',badge?2:1);
+}
+function celebrateLift(rec){
+  if(!recent(rec.date)){toast('Workout saved.');return;}
+  var n=rec.ex.length,dn=rec.ex.filter(function(e){return e.done.every(Boolean);}).length;
+  donePop('lift','Workout '+rec.type+' saved',dn===n?'All '+n+' exercises done.':dn+' of '+n+' exercises done.','',2600);
 }
 function centerOf(el){var r=el.getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2};}
 function celebrate(i,j){
@@ -1318,7 +1373,7 @@ var A={
       a.ex.forEach(function(e){S.settings.weights[e.k]=e.done.every(Boolean)?e.w+S.settings.inc[e.k]:e.w;});
       S.settings.next=a.type==='A'?'B':'A';
       advance('lift',a.date);clearRest(a.date);
-      S.active=null;ui.tab='today';ui.sel=null;ui.week=null;save();render();window.scrollTo(0,0);toast('Workout saved.');
+      S.active=null;ui.tab='today';ui.sel=null;ui.week=null;save();render();window.scrollTo(0,0);celebrateLift(rec);
     };
     if(all)go();else ask('Some sets are not marked. Save anyway? Those exercises keep the same weight next time.','Save workout',go);
   },
@@ -1330,11 +1385,12 @@ var A={
     var mi=num(document.getElementById('f-mi').value),secs=readTime(),date=document.getElementById('f-date').value;
     if(!(mi>0)){toast('Enter the distance in miles.');return;}
     if(!/^\d{4}-\d{2}-\d{2}$/.test(date)){toast('Pick a date.');return;}
-    var s=ui.sheet,ex=s.id?S.runs.filter(function(r){return r.id===s.id;})[0]:null;
+    var s=ui.sheet,ex=s.id?S.runs.filter(function(r){return r.id===s.id;})[0]:null,made=null,pr=runPriors();
     if(ex){ex.miles=mi;ex.secs=secs;ex.date=date;}
-    else{S.runs.push({id:uid(),date:date,miles:mi,secs:secs,planId:s.planId||null,at:Date.now()});advance('run',date);}
+    else{made={id:uid(),date:date,miles:mi,secs:secs,planId:s.planId||null,at:Date.now()};S.runs.push(made);advance('run',date);}
     clearRest(date);
     save();closeSheet();render();
+    if(made)celebrateRun(made,pr);
   },
   delRunFromSheet:function(){
     var id=ui.sheet&&ui.sheet.id;
@@ -1346,11 +1402,13 @@ var A={
   saveRide:function(){
     var date=document.getElementById('f-date').value,m=num(document.getElementById('f-rmin').value),k=num(document.getElementById('f-kj').value);
     if(!/^\d{4}-\d{2}-\d{2}$/.test(date)){toast('Pick a date.');return;}
-    var sh=ui.sheet,old=sh&&sh.id?S.rides.filter(function(r){return r.id===sh.id;})[0]:null;
+    var sh=ui.sheet,old=sh&&sh.id?S.rides.filter(function(r){return r.id===sh.id;})[0]:null,made=null;
+    var bestKj=S.rides.reduce(function(a,r){return Math.max(a,r.kj||0);},0);
     if(old){old.date=date;old.mins=isFinite(m)&&m>0?m:0;old.kj=isFinite(k)&&k>0?k:0;}
-    else{S.rides.push({id:uid(),date:date,mins:isFinite(m)&&m>0?m:0,kj:isFinite(k)&&k>0?k:0,at:Date.now()});advance('bike',date);}
+    else{made={id:uid(),date:date,mins:isFinite(m)&&m>0?m:0,kj:isFinite(k)&&k>0?k:0,at:Date.now()};S.rides.push(made);advance('bike',date);}
     clearRest(date);
     save();closeSheet();render();
+    if(made)celebrateRide(made,bestKj);
   },
 
   /* editing */
