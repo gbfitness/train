@@ -207,6 +207,10 @@ summary .wn{font:650 18px ui-serif,"New York",Georgia,serif}
 .rdots{display:flex;gap:6px}.rdots i{width:8px;height:8px;border-radius:50%;background:var(--line)}.rdots i.on{background:var(--ink)}
 
 /* analytics */
+.pillbar{position:sticky;top:0;z-index:8;display:flex;gap:8px;margin:14px -18px 0;padding:10px 18px;background:var(--paper);box-shadow:0 1px 0 var(--line)}
+.pill{appearance:none;flex:1;border:1.5px solid var(--line);background:var(--card);border-radius:999px;padding:9px 0;font-size:14.5px;font-weight:700;color:var(--ink)}
+.pill[aria-pressed="true"]{background:var(--c);border-color:var(--c);color:#fff}
+.pill.all[aria-pressed="true"]{color:var(--paper)}
 .acard{margin-top:12px;padding:14px 14px 10px;border:1.5px solid var(--line);border-radius:18px;background:var(--card)}
 .ahead{display:flex;justify-content:space-between;align-items:flex-end;gap:10px;margin-bottom:6px}
 .ahead .at{font:650 19px/1.15 ui-serif,"New York",Georgia,serif}
@@ -408,7 +412,7 @@ function load(){
   return fresh();
 }
 var S=load();
-var ui={tab:'today',open:{},confirm:null,sheet:null,sel:null,week:null,cal:null,rehab:{area:'ankle',i:0}};
+var ui={tab:'today',open:{},confirm:null,sheet:null,sel:null,week:null,cal:null,rehab:{area:'ankle',i:0},aFilter:'all'};
 function save(){
   try{localStorage.setItem(KEY,JSON.stringify(S));}
   catch(e){toast('Could not save. Storage may be full or blocked.');}
@@ -783,17 +787,20 @@ function vRun(){
 }
 
 /* ---------- views: ride, history ---------- */
+function rideWatts(r){return (r.kj>0&&r.mins>0)?r.kj*1000/(r.mins*60):0;}   // average power = energy (J) / time (s)
+function fmtInt(n){return Math.round(n).toLocaleString('en-US');}
 function rideStats(from){
   var r=S.rides.filter(function(x){return !from||parseYmd(x.date)>=from;});
-  var withKj=r.filter(function(x){return x.kj>0;});   // average only over rides where output was entered
-  return {n:r.length,mins:r.reduce(function(a,x){return a+x.mins;},0),
-    avgKj:withKj.length?withKj.reduce(function(a,x){return a+x.kj;},0)/withKj.length:0};
+  var wr=r.filter(function(x){return rideWatts(x)>0;});   // watts need both minutes and kJ
+  var wkj=wr.reduce(function(a,x){return a+x.kj;},0),wsec=wr.reduce(function(a,x){return a+x.mins*60;},0);
+  return {n:r.length,mins:r.reduce(function(a,x){return a+x.mins;},0),kj:r.reduce(function(a,x){return a+(x.kj||0);},0),
+    avgW:wsec?wkj*1000/wsec:0};
 }
 function vRide(){
   var now=new Date(),wk=rideStats(weekStart(now)),mo=rideStats(new Date(now.getFullYear(),now.getMonth(),1)),all=rideStats();
-  function block(t,s){return '<div class="stat"><div class="n">'+s.n+'</div><div class="l">'+t+(s.avgKj?'<br>'+Math.round(s.avgKj)+' kJ average':'')+(s.mins?'<br>'+Math.round(s.mins)+' min':'')+'</div></div>';}
+  function block(t,s){return '<div class="stat"><div class="n">'+s.n+'</div><div class="l">'+t+(s.avgW?'<br>'+Math.round(s.avgW)+' W avg':'')+(s.kj?'<br>'+fmtInt(s.kj)+' kJ total':'')+(s.mins?'<br>'+Math.round(s.mins)+' min':'')+'</div></div>';}
   var list=S.rides.slice().sort(function(a,b){return b.date.localeCompare(a.date)||b.at-a.at;}).slice(0,8).map(function(r){return itemHtml('ride',r);}).join('');
-  return bannerHtml('ride')+'<h1>Ride</h1><div class="sub">One tap to log. Minutes and output are optional.</div>'+
+  return bannerHtml('ride')+'<h1>Ride</h1><div class="sub">One tap to log. Minutes and total output (kJ) are optional. With both, the app works out your average watts.</div>'+
     '<button class="btn ride" data-act="logRide">Log a ride</button>'+
     '<div class="stats">'+block('This week',wk)+block('This month',mo)+block('All time',all)+'</div>'+
     '<h3>Recent rides</h3>'+(list||'<div class="empty">No rides yet.</div>');
@@ -810,7 +817,7 @@ function itemHtml(kind,x){
     body='<div class="x">'+(x.secs?'<span>'+fmtDur(x.secs)+'</span><span>'+paceOf(x.miles,x.secs)+' per mile</span>':'<span>No time logged</span>')+(isPlanId(x.planId)?'<span>Plan run '+x.planId.slice(1)+'</span>':isRetId(x.planId)?'<span>Return run</span>':'')+'</div>';
   }else if(kind==='ride'){
     h='Ride';
-    body='<div class="x">'+((x.mins||x.kj)?(x.mins?'<span>'+fmtNum(x.mins)+' min</span>':'')+(x.kj?'<span>'+fmtNum(x.kj)+' kJ</span>':''):'<span>Logged</span>')+'</div>';
+    body='<div class="x">'+((x.mins||x.kj)?(x.mins?'<span>'+fmtNum(x.mins)+' min</span>':'')+(x.kj?'<span>'+fmtNum(x.kj)+' kJ</span>':'')+(rideWatts(x)?'<span>'+Math.round(rideWatts(x))+' W avg</span>':''):'<span>Logged</span>')+'</div>';
   }else{h='Rest day';body='<div class="x"><span>Schedule moved back a day</span></div>';}
   return '<div class="item"><span class="bar" style="background:var(--'+c+')"></span><div class="body"><div class="h">'+h+'</div><div class="x">'+fmtDate(x.date)+'</div>'+body+'</div>'+
     '<span class="acts">'+(kind!=='rest'?'<button class="del" data-act="edit" data-kind="'+kind+'" data-id="'+esc(x.id)+'">Edit</button>':'')+
@@ -914,10 +921,11 @@ function celebrateRun(r,pr){
   donePop('run',title,sub,badges[0]||(race?'13.1 miles':''),race?4500:2800);
   fireFx('run',race?3:(badges.length||isPlanId(r.planId))?2:1);
 }
-function celebrateRide(r,bestKj){
+function celebrateRide(r,pr){
   if(!recent(r.date)){toast('Ride logged.');return;}
-  var parts=[];if(r.mins)parts.push(fmtNum(r.mins)+' min');if(r.kj)parts.push(fmtNum(r.kj)+' kJ');
-  var badge=(r.kj>0&&bestKj>0&&r.kj>bestKj)?'Best output yet':'';
+  var w=rideWatts(r),parts=[];
+  if(r.mins)parts.push(fmtNum(r.mins)+' min');if(r.kj)parts.push(fmtNum(r.kj)+' kJ');if(w)parts.push(Math.round(w)+' W avg');
+  var badge=(w>0&&pr.bestW>0&&w>pr.bestW)?'Best average output yet':(r.kj>0&&pr.bestKj>0&&r.kj>pr.bestKj)?'Most total output yet':'';
   donePop('ride','Ride done!',parts.length?parts.join(', '):'Nice work.',badge,2800);
   fireFx('ride',badge?2:1);
 }
@@ -1074,7 +1082,7 @@ function chartSvg(o){
 function barSvg(o){
   var W=340,H=o.h||140,L=42,R=12,T=18,B=22,iw=W-L-R,ih=H-T-B,n=o.bars.length;
   if(!n)return '';
-  var mx=Math.max.apply(null,o.bars.map(function(b){return b.v;}).concat([o.minMax||1])),y1=mx*1.12,g='',st=niceStep(y1/3.2,o.steps),v;
+  var mx=Math.max.apply(null,o.bars.map(function(b){return b.v;}).concat([o.minMax||1])),y1=mx*1.12,g='',st=niceStep(y1/4,o.steps),v;
   function Y(v){return T+(1-v/y1)*ih;}
   for(v=st;v<=y1+1e-9;v+=st){var yy=Y(v).toFixed(1);
     g+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+yy+'" y2="'+yy+'" stroke="var(--line)" stroke-width="1"/><text x="'+(L-6)+'" y="'+(+yy+3.5)+'" text-anchor="end">'+esc(o.yFmt(v))+'</text>';}
@@ -1095,25 +1103,24 @@ function vAnalytics(){
     '<div class="sub">Your progress over time. Weeks start on Monday. The current week is shown lighter because it isn\u2019t finished.</div>';
 
   /* lifting */
-  h+='<h3>Lifting</h3>';
+  var L='',R='',B='';
   var lifts=S.lifts.slice().sort(function(a,b){return a.date.localeCompare(b.date)||a.at-b.at;});
-  if(!lifts.length)h+='<div class="aempty">Finish a workout to see your lifting progress.</div>';
+  if(!lifts.length)L+='<div class="aempty">Finish a workout to see your lifting progress.</div>';
   else{
-    h+='<div class="akey"><span><i style="background:var(--lift)"></i>All sets done</span><span><i style="border:2px solid var(--lift);background:var(--card);box-sizing:border-box"></i>Some sets not done</span></div>';
+    L+='<div class="akey"><span><i style="background:var(--lift)"></i>All sets done</span><span><i style="border:2px solid var(--lift);background:var(--card);box-sizing:border-box"></i>Some sets not done</span></div>';
     KEYS.forEach(function(k){
       var pts=[];lifts.forEach(function(l){l.ex.forEach(function(e){if(e.k===k)pts.push([tOf(l.date),e.w,e.done.every(Boolean)]);});});
-      if(!pts.length){h+=aCard(LIFTS[k],'','<div class="aempty">Not done yet.</div>');return;}
+      if(!pts.length){L+=aCard(LIFTS[k],'','<div class="aempty">Not done yet.</div>');return;}
       var ch=pts[pts.length-1][1]-pts[0][1];
       var sub='<div class="note" style="margin:-2px 0 4px">'+(ch>0?'+'+fmtNum(ch)+' lb':ch<0?fmtNum(ch)+' lb':'No change')+' since '+fmtDate(ymd(new Date(pts[0][0])))+'. '+pts.length+(pts.length===1?' workout.':' workouts.')+'</div>';
-      h+=aCard(LIFTS[k],fmtW(S.settings.weights[k])+' <small>lb next</small>',sub+
+      L+=aCard(LIFTS[k],fmtW(S.settings.weights[k])+' <small>lb next</small>',sub+
         chartSvg({h:112,steps:[2.5,5,10,20,25,50,100],label:LIFTS[k]+' weight over time',yFmt:function(v){return fmtNum(Math.round(v))+' lb';},series:[{pts:pts,line:true,dots:true,color:'var(--lift)'}]}));
     });
   }
 
   /* running */
-  h+='<h3>Running</h3>';
   var runs=S.runs.slice(),timed=runs.filter(function(r){return r.secs>0&&r.miles>0;});
-  if(!runs.length)h+='<div class="aempty">Log a run to see your running progress.</div>';
+  if(!runs.length)R+='<div class="aempty">Log a run to see your running progress.</div>';
   else{
     var wk={};runs.forEach(function(r){var key=weekKey(r.date),w=wk[key]||(wk[key]={mi:0,tmi:0,ts:0});w.mi+=r.miles;if(r.secs>0){w.tmi+=r.miles;w.ts+=r.secs;}});
     var weeks=weekList(runs.map(function(r){return r.date;}));
@@ -1130,40 +1137,63 @@ function vAnalytics(){
         series:[{pts:timed.map(function(r){return [tOf(r.date),r.secs/r.miles];}),dots:true,color:'var(--run)',opacity:.4,r:3},
                 {pts:weekly,line:true,dots:true,color:'var(--run)'}]})+
       '<div class="note">Per mile. Higher on the chart is faster.</div>';
-    h+=aCard('Average pace',best?fmtPace(best)+' <small>per mile</small>':'',paceBody);
-    h+=aCard('Weekly miles',cw?fmtNum(+cw.mi.toFixed(1))+' <small>mi this week</small>':'0 <small>mi this week</small>',
+    R+=aCard('Average pace',best?fmtPace(best)+' <small>per mile</small>':'',paceBody);
+    R+=aCard('Weekly miles',cw?fmtNum(+cw.mi.toFixed(1))+' <small>mi this week</small>':'0 <small>mi this week</small>',
       mini([[fmtNum(+bigWeek.toFixed(1)),'biggest week'],[fmtNum(+(runs.reduce(function(a,r){return a+r.miles;},0)).toFixed(1)),'total miles'],[runs.length,'runs']])+
       barSvg({h:150,label:'Miles per week',color:'var(--run)',yFmt:function(v){return fmtNum(Math.round(v))+' mi';},bars:bars,minMax:5}));
   }
 
   /* biking */
-  h+='<h3>Biking</h3>';
-  var rides=S.rides.slice(),withKj=rides.filter(function(r){return r.kj>0;});
-  if(!rides.length)h+='<div class="aempty">Log a ride to see your biking progress.</div>';
+  var rides=S.rides.slice(),withKj=rides.filter(function(r){return r.kj>0;}),withW=rides.filter(function(r){return rideWatts(r)>0;});
+  if(!rides.length)B+='<div class="aempty">Log a ride to see your biking progress.</div>';
   else{
-    var bw={};rides.forEach(function(r){var key=weekKey(r.date),w=bw[key]||(bw[key]={n:0,min:0,kjn:0,kj:0});w.n++;w.min+=r.mins||0;if(r.kj>0){w.kjn++;w.kj+=r.kj;}});
+    var bw={};
+    rides.forEach(function(r){var key=weekKey(r.date),w=bw[key]||(bw[key]={n:0,min:0,kj:0,wkj:0,wsec:0});
+      w.n++;w.min+=r.mins||0;if(r.kj>0)w.kj+=r.kj;
+      if(rideWatts(r)>0){w.wkj+=r.kj;w.wsec+=r.mins*60;}});
     var bweeks=weekList(rides.map(function(r){return r.date;}));
-    var bweekly=[];bweeks.forEach(function(d){var w=bw[ymd(d)];if(w&&w.kjn)bweekly.push([d.getTime()+3.5*864e5,w.kj/w.kjn]);});
-    var avgAll=withKj.length?withKj.reduce(function(a,r){return a+r.kj;},0)/withKj.length:0;
-    var bestRide=withKj.length?Math.max.apply(null,withKj.map(function(r){return r.kj;})):0;
-    var latestAvg=bweekly.length?bweekly[bweekly.length-1][1]:0;
+    var bwk=[];bweeks.forEach(function(d){var w=bw[ymd(d)];if(w&&w.wsec>0)bwk.push([d.getTime()+3.5*864e5,w.wkj*1000/w.wsec]);});   // time-weighted weekly average
+    var allKj=withW.reduce(function(a,r){return a+r.kj;},0),allSec=withW.reduce(function(a,r){return a+r.mins*60;},0);
+    var avgAllW=allSec?allKj*1000/allSec:0;
+    var bestW=withW.length?Math.max.apply(null,withW.map(rideWatts)):0;
+    var latestW=bwk.length?bwk[bwk.length-1][1]:0;
     var outBody;
-    if(!withKj.length)outBody='<div class="aempty">Add your Peloton output (kJ) when you log rides to see this.</div>';
-    else outBody=mini([[Math.round(latestAvg)+' kJ','latest week'],[Math.round(avgAll)+' kJ','all time'],[Math.round(bestRide)+' kJ','best ride']])+
-      '<div class="akey"><span><i style="background:var(--ride);opacity:.45"></i>Each ride</span><span><i style="background:var(--ride)"></i>Weekly average</span></div>'+
-      chartSvg({h:150,label:'Average output over time',floor:0,yFmt:function(v){return Math.round(v)+' kJ';},
-        series:[{pts:withKj.map(function(r){return [tOf(r.date),r.kj];}),dots:true,color:'var(--ride)',opacity:.4,r:3},
-                {pts:bweekly,line:true,dots:true,color:'var(--ride)'}]});
-    h+=aCard('Average output',latestAvg?Math.round(latestAvg)+' <small>kJ per ride</small>':'',outBody);
-    var anyMin=rides.some(function(r){return r.mins>0;}),cbw=bw[ymd(weekStart(new Date()))];
-    var bbars=bweeks.map(function(d){var w=bw[ymd(d)];return {t:d,v:w?(anyMin?w.min:w.n):0,lab:w?(anyMin?Math.round(w.min)+'':w.n+''):''};});
-    h+=aCard('Weekly volume',anyMin?(cbw?Math.round(cbw.min):0)+' <small>min this week</small>':(cbw?cbw.n:0)+' <small>rides this week</small>',
-      (anyMin?'':'<div class="note" style="margin-bottom:4px">Showing rides per week. Add minutes when you log rides to see time instead.</div>')+
-      barSvg({h:150,label:anyMin?'Minutes ridden per week':'Rides per week',color:'var(--ride)',minMax:anyMin?30:2,
-        yFmt:anyMin?function(v){return Math.round(v)+' min';}:function(v){return String(Math.round(v*10)/10);},bars:bbars})+
-      (anyMin?'<div class="note">Minutes ridden per week. Rides without minutes count as 0.</div>':''));
+    if(!withW.length){
+      outBody='<div class="aempty">Log minutes and total output (kJ) together to see average watts.'+
+        (withKj.length?' '+withKj.length+(withKj.length===1?' ride has':' rides have')+' output but no minutes.':'')+'</div>';
+    }else{
+      outBody=mini([[Math.round(latestW)+' W','latest week'],[Math.round(avgAllW)+' W','all time'],[Math.round(bestW)+' W','best ride']])+
+        '<div class="akey"><span><i style="background:var(--ride);opacity:.45"></i>Each ride</span><span><i style="background:var(--ride)"></i>Weekly average</span></div>'+
+        chartSvg({h:150,label:'Average output in watts over time',floor:0,yFmt:function(v){return Math.round(v)+' W';},
+          series:[{pts:withW.map(function(r){return [tOf(r.date),rideWatts(r)];}),dots:true,color:'var(--ride)',opacity:.4,r:3},
+                  {pts:bwk,line:true,dots:true,color:'var(--ride)'}]})+
+        '<div class="note">Average watts = total output (kJ) divided by time. Rides without both minutes and kJ are left out.</div>';
+    }
+    B+=aCard('Average output',latestW?Math.round(latestW)+' <small>W</small>':'',outBody);
+    var anyKj=withKj.length>0,anyMin=rides.some(function(r){return r.mins>0;}),mode=anyKj?'kj':anyMin?'min':'rides';
+    var cbw=bw[ymd(weekStart(new Date()))]||{n:0,min:0,kj:0};
+    var totKj=rides.reduce(function(a,r){return a+(r.kj||0);},0),totMin=rides.reduce(function(a,r){return a+(r.mins||0);},0);
+    var val=mode==='kj'?fmtInt(cbw.kj)+' <small>kJ this week</small>':mode==='min'?Math.round(cbw.min)+' <small>min this week</small>':cbw.n+' <small>rides this week</small>';
+    var bbars=bweeks.map(function(d){var w=bw[ymd(d)],v=w?(mode==='kj'?w.kj:mode==='min'?w.min:w.n):0;
+      return {t:d,v:v,lab:(w&&v)?(mode==='rides'?String(w.n):fmtInt(v)):''};});
+    var note=mode==='kj'?'Total output (kJ) per week. Rides without kJ count as 0.':mode==='min'?'Minutes ridden per week. Add kJ when you log rides to see total output.':'Rides per week. Add minutes and kJ when you log rides to see more.';
+    B+=aCard('Weekly volume',val,
+      mini([[fmtInt(totKj)+' kJ','total output'],[fmtInt(totMin)+' min','ridden'],[rides.length,rides.length===1?'ride':'rides']])+
+      barSvg({h:150,label:mode==='kj'?'Total output in kJ per week':mode==='min'?'Minutes ridden per week':'Rides per week',color:'var(--ride)',
+        minMax:mode==='kj'?300:mode==='min'?30:2,
+        yFmt:mode==='kj'?function(v){return fmtInt(v);}:mode==='min'?function(v){return Math.round(v)+' min';}:function(v){return String(Math.round(v*10)/10);},bars:bbars})+
+      '<div class="note">'+note+'</div>');
   }
-  return h;
+
+  /* compose with the filter */
+  var f=ui.aFilter||'all',out='';
+  function sec(title,body){return (f==='all'?'<h3>'+title+'</h3>':'')+body;}
+  if(f==='all'||f==='lift')out+=sec('Lifting',L);
+  if(f==='all'||f==='run')out+=sec('Running',R);
+  if(f==='all'||f==='ride')out+=sec('Biking',B);
+  var pills=[['all','All','ink'],['lift','Lifting','lift'],['run','Running','run'],['ride','Biking','ride']].map(function(x){
+    return '<button class="pill'+(x[0]==='all'?' all':'')+'" style="--c:var(--'+x[2]+')" aria-pressed="'+(f===x[0])+'" data-act="aFilter" data-f="'+x[0]+'">'+x[1]+'</button>';}).join('');
+  return h+'<div class="pillbar" role="group" aria-label="Show activity">'+pills+'</div>'+out;
 }
 
 /* ---------- render ---------- */
@@ -1248,8 +1278,15 @@ function rideSheet(ex){
   ui.sheet={kind:'ride',id:ex?ex.id:null};
   openSheet('<h2>'+(ex?'Edit ride':'Log a ride')+'</h2><label for="f-date">Date</label><input id="f-date" type="date" value="'+(ex?ex.date:today())+'">'+
     '<div class="row2"><div><label for="f-rmin">Minutes (optional)</label><input id="f-rmin" inputmode="numeric" value="'+(ex&&ex.mins?fmtNum(ex.mins):'')+'"></div>'+
-    '<div><label for="f-kj">Output, kJ (optional)</label><input id="f-kj" inputmode="numeric" value="'+(ex&&ex.kj?fmtNum(ex.kj):'')+'"></div></div>'+
+    '<div><label for="f-kj">Total output, kJ (optional)</label><input id="f-kj" inputmode="numeric" value="'+(ex&&ex.kj?fmtNum(ex.kj):'')+'"></div></div>'+
+    '<div class="pace" id="wprev"></div><div class="note">Average watts are worked out from minutes and kJ.</div>'+
     '<button class="btn ride" data-act="saveRide">Save ride</button><button class="btn ghost" data-act="close">Cancel</button>');
+  updateWatts();
+}
+function updateWatts(){
+  var el=document.getElementById('wprev');if(!el)return;
+  var m=num(document.getElementById('f-rmin').value),k=num(document.getElementById('f-kj').value);
+  el.textContent=(m>0&&k>0)?'\u2248 '+Math.round(k*1000/(m*60))+' W average':'';
 }
 function latestLiftWith(k){
   var best=null;
@@ -1329,6 +1366,7 @@ var A={
   calNav:function(d){var c=ui.cal,x=new Date(c.y,c.m+Number(d.d),1);ui.cal={y:x.getFullYear(),m:x.getMonth()};calSheet();},
 
   /* rehab */
+  aFilter:function(d){ui.aFilter=d.f;render();},
   rehabArea:function(d){ui.rehab={area:d.area,i:0};render();},
   rehabNav:function(d){var n=rehabList().length;ui.rehab.i=((ui.rehab.i+Number(d.d))%n+n)%n;render();},
 
@@ -1403,12 +1441,12 @@ var A={
     var date=document.getElementById('f-date').value,m=num(document.getElementById('f-rmin').value),k=num(document.getElementById('f-kj').value);
     if(!/^\d{4}-\d{2}-\d{2}$/.test(date)){toast('Pick a date.');return;}
     var sh=ui.sheet,old=sh&&sh.id?S.rides.filter(function(r){return r.id===sh.id;})[0]:null,made=null;
-    var bestKj=S.rides.reduce(function(a,r){return Math.max(a,r.kj||0);},0);
+    var pr={bestKj:S.rides.reduce(function(a,r){return Math.max(a,r.kj||0);},0),bestW:S.rides.reduce(function(a,r){return Math.max(a,rideWatts(r));},0)};
     if(old){old.date=date;old.mins=isFinite(m)&&m>0?m:0;old.kj=isFinite(k)&&k>0?k:0;}
     else{made={id:uid(),date:date,mins:isFinite(m)&&m>0?m:0,kj:isFinite(k)&&k>0?k:0,at:Date.now()};S.rides.push(made);advance('bike',date);}
     clearRest(date);
     save();closeSheet();render();
-    if(made)celebrateRide(made,bestKj);
+    if(made)celebrateRide(made,pr);
   },
 
   /* editing */
@@ -1496,6 +1534,7 @@ document.addEventListener('click',function(e){
 document.addEventListener('input',function(e){
   var id=e.target&&e.target.id;
   if(id==='f-mi'||id==='f-min'||id==='f-sec')updatePace();
+  if(id==='f-rmin'||id==='f-kj')updateWatts();
 });
 document.addEventListener('toggle',function(e){
   var d=e.target;if(d&&d.dataset&&d.dataset.key!==undefined){ui.open[d.dataset.key]=d.open?1:0;}
