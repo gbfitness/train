@@ -271,7 +271,7 @@ summary .wn{font:650 18px ui-serif,"New York",Georgia,serif}
 .panel input,.panel textarea{display:block;width:100%;margin-top:6px;padding:12px;border-radius:12px;
   border:1.5px solid var(--line);background:var(--paper);color:var(--ink);font-size:17px;font-family:inherit}
 .panel textarea{height:180px;font:13px/1.35 ui-monospace,Menlo,monospace}
-.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:end}
 .stepper{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
 .pace{margin-top:12px;font:650 20px ui-serif,"New York",Georgia,serif;min-height:26px}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(96px + env(safe-area-inset-bottom));
@@ -368,11 +368,11 @@ function initPtr(d){
 }
 function seedBike(d){
   // You said the rotation starts with the bike ride you did on Sep 28, so it is logged as done (delete it in History if not).
-  if(!d.rides.some(function(r){return r.date===ANCHOR_S;}))d.rides.push({id:'seed-bike',date:ANCHOR_S,mins:0,kj:0,at:0});
+  if(!d.rides.some(function(r){return r.date===ANCHOR_S;}))d.rides.push({id:'seed-bike',date:ANCHOR_S,mins:0,watts:0,at:0});
 }
 function fresh(){
   var w={},i={};KEYS.forEach(function(k){w[k]=45;i[k]=5;});w.deadlift=95;
-  var d={v:2,settings:{weights:w,inc:i,next:'A',lastExport:null,runPause:{on:false,since:null},retCycle:0,retN:2},lifts:[],runs:[],rides:[],rests:[],rot:{ptr:0},active:null};
+  var d={v:3,settings:{weights:w,inc:i,next:'A',lastExport:null,runPause:{on:false,since:null},retCycle:0,retN:2},lifts:[],runs:[],rides:[],rests:[],rot:{ptr:0},active:null};
   seedBike(d);d.rot.ptr=initPtr(d);return d;
 }
 function coerce(o){
@@ -395,7 +395,7 @@ function coerce(o){
     var pid=r.planId?String(r.planId):null;if(pid&&!isPlanId(pid)&&!isRetId(pid)&&pid!=='race')pid=null;   // old week-based ids become extra runs
     return {id:String(r.id||uid()),date:String(r.date),miles:Number(r.miles),secs:Number(r.secs)||0,planId:pid,at:Number(r.at)||0};});
   d.rides=(Array.isArray(o.rides)?o.rides:[]).filter(function(r){return r&&re.test(String(r.date));}).map(function(r){
-    return {id:String(r.id||uid()),date:String(r.date),mins:Number(r.mins)||0,kj:Number(r.kj)||0,at:Number(r.at)||0};});
+    return {id:String(r.id||uid()),date:String(r.date),mins:Number(r.mins)||0,watts:(r.watts!==undefined?Number(r.watts):Number(r.kj))||0,at:Number(r.at)||0};});   // older saves stored the typed number as kj; it was average watts
   d.rests=(Array.isArray(o.rests)?o.rests:[]).filter(function(x){return re.test(String(x));}).map(String);
   if((Number(o.v)||1)<2)seedBike(d);
   var rp=o.rot?Number(o.rot.ptr):NaN;
@@ -787,20 +787,18 @@ function vRun(){
 }
 
 /* ---------- views: ride, history ---------- */
-function rideWatts(r){return (r.kj>0&&r.mins>0)?r.kj*1000/(r.mins*60):0;}   // average power = energy (J) / time (s)
 function fmtInt(n){return Math.round(n).toLocaleString('en-US');}
 function rideStats(from){
   var r=S.rides.filter(function(x){return !from||parseYmd(x.date)>=from;});
-  var wr=r.filter(function(x){return rideWatts(x)>0;});   // watts need both minutes and kJ
-  var wkj=wr.reduce(function(a,x){return a+x.kj;},0),wsec=wr.reduce(function(a,x){return a+x.mins*60;},0);
-  return {n:r.length,mins:r.reduce(function(a,x){return a+x.mins;},0),kj:r.reduce(function(a,x){return a+(x.kj||0);},0),
-    avgW:wsec?wkj*1000/wsec:0};
+  var wr=r.filter(function(x){return x.watts>0;});
+  return {n:r.length,mins:r.reduce(function(a,x){return a+x.mins;},0),
+    avgW:wr.length?wr.reduce(function(a,x){return a+x.watts;},0)/wr.length:0};
 }
 function vRide(){
   var now=new Date(),wk=rideStats(weekStart(now)),mo=rideStats(new Date(now.getFullYear(),now.getMonth(),1)),all=rideStats();
-  function block(t,s){return '<div class="stat"><div class="n">'+s.n+'</div><div class="l">'+t+(s.avgW?'<br>'+Math.round(s.avgW)+' W avg':'')+(s.kj?'<br>'+fmtInt(s.kj)+' kJ total':'')+(s.mins?'<br>'+Math.round(s.mins)+' min':'')+'</div></div>';}
+  function block(t,s){return '<div class="stat"><div class="n">'+s.n+'</div><div class="l">'+t+(s.avgW?'<br>'+Math.round(s.avgW)+' W avg':'')+(s.mins?'<br>'+Math.round(s.mins)+' min':'')+'</div></div>';}
   var list=S.rides.slice().sort(function(a,b){return b.date.localeCompare(a.date)||b.at-a.at;}).slice(0,8).map(function(r){return itemHtml('ride',r);}).join('');
-  return bannerHtml('ride')+'<h1>Ride</h1><div class="sub">One tap to log. Minutes and total output (kJ) are optional. With both, the app works out your average watts.</div>'+
+  return bannerHtml('ride')+'<h1>Ride</h1><div class="sub">One tap to log. Minutes and average output (watts) are optional.</div>'+
     '<button class="btn ride" data-act="logRide">Log a ride</button>'+
     '<div class="stats">'+block('This week',wk)+block('This month',mo)+block('All time',all)+'</div>'+
     '<h3>Recent rides</h3>'+(list||'<div class="empty">No rides yet.</div>');
@@ -817,7 +815,7 @@ function itemHtml(kind,x){
     body='<div class="x">'+(x.secs?'<span>'+fmtDur(x.secs)+'</span><span>'+paceOf(x.miles,x.secs)+' per mile</span>':'<span>No time logged</span>')+(isPlanId(x.planId)?'<span>Plan run '+x.planId.slice(1)+'</span>':isRetId(x.planId)?'<span>Return run</span>':'')+'</div>';
   }else if(kind==='ride'){
     h='Ride';
-    body='<div class="x">'+((x.mins||x.kj)?(x.mins?'<span>'+fmtNum(x.mins)+' min</span>':'')+(x.kj?'<span>'+fmtNum(x.kj)+' kJ</span>':'')+(rideWatts(x)?'<span>'+Math.round(rideWatts(x))+' W avg</span>':''):'<span>Logged</span>')+'</div>';
+    body='<div class="x">'+((x.mins||x.watts)?(x.mins?'<span>'+fmtNum(x.mins)+' min</span>':'')+(x.watts?'<span>'+fmtNum(x.watts)+' W avg</span>':''):'<span>Logged</span>')+'</div>';
   }else{h='Rest day';body='<div class="x"><span>Schedule moved back a day</span></div>';}
   return '<div class="item"><span class="bar" style="background:var(--'+c+')"></span><div class="body"><div class="h">'+h+'</div><div class="x">'+fmtDate(x.date)+'</div>'+body+'</div>'+
     '<span class="acts">'+(kind!=='rest'?'<button class="del" data-act="edit" data-kind="'+kind+'" data-id="'+esc(x.id)+'">Edit</button>':'')+
@@ -833,10 +831,10 @@ function vHistory(){
   var list=items.slice(0,150).map(function(p){return itemHtml(p[0],p[1]);}).join('');
   var le=S.settings.lastExport;
   return '<h1>History</h1><div class="sub">'+count+(count===1?' activity':' activities')+' logged.</div>'+
-    '<button class="menu" data-act="tab" data-tab="rehab"><span><span class="mt">Rehab exercises</span><br><span class="note">Ankle, groin and glute</span></span>'+
-      '<span class="mdots"><i class="d ride"></i><i class="d lift"></i><i class="d run"></i><span aria-hidden="true" style="font-size:24px;margin-left:6px">\u203a</span></span></button>'+
-    '<button class="menu" data-act="tab" data-tab="analytics" style="margin-top:10px"><span><span class="mt">Analytics</span><br><span class="note">Lifts, runs and rides over time</span></span>'+
+    '<button class="menu" data-act="tab" data-tab="analytics"><span><span class="mt">Analytics</span><br><span class="note">Lifts, runs and rides over time</span></span>'+
       '<span class="mdots"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19V5M4 19h16M8 15l4-5 3 3 5-7"/></svg><span aria-hidden="true" style="font-size:24px;margin-left:6px">\u203a</span></span></button>'+
+    '<button class="menu" data-act="tab" data-tab="rehab" style="margin-top:10px"><span><span class="mt">Rehab exercises</span><br><span class="note">Ankle, groin and glute</span></span>'+
+      '<span class="mdots"><i class="d ride"></i><i class="d lift"></i><i class="d run"></i><span aria-hidden="true" style="font-size:24px;margin-left:6px">\u203a</span></span></button>'+
     '<h3>Backup</h3>'+
     '<div class="note">Everything is stored on this phone, inside this app. Last backup: '+(le?new Date(le).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'never')+'.</div>'+
     '<button class="btn ghost" data-act="exportData">Back up data</button>'+
@@ -923,9 +921,9 @@ function celebrateRun(r,pr){
 }
 function celebrateRide(r,pr){
   if(!recent(r.date)){toast('Ride logged.');return;}
-  var w=rideWatts(r),parts=[];
-  if(r.mins)parts.push(fmtNum(r.mins)+' min');if(r.kj)parts.push(fmtNum(r.kj)+' kJ');if(w)parts.push(Math.round(w)+' W avg');
-  var badge=(w>0&&pr.bestW>0&&w>pr.bestW)?'Best average output yet':(r.kj>0&&pr.bestKj>0&&r.kj>pr.bestKj)?'Most total output yet':'';
+  var parts=[];
+  if(r.mins)parts.push(fmtNum(r.mins)+' min');if(r.watts)parts.push(fmtNum(r.watts)+' W avg');
+  var badge=(r.watts>0&&pr.bestW>0&&r.watts>pr.bestW)?'Best average output yet':'';
   donePop('ride','Ride done!',parts.length?parts.join(', '):'Nice work.',badge,2800);
   fireFx('ride',badge?2:1);
 }
@@ -1100,7 +1098,7 @@ function aCard(title,val,body){return '<div class="acard"><div class="ahead"><di
 function mini(items){return '<div class="amini">'+items.map(function(x){return '<div><b>'+x[0]+'</b><span>'+x[1]+'</span></div>';}).join('')+'</div>';}
 function vAnalytics(){
   var h='<button class="link" data-act="tab" data-tab="history" style="padding:0 0 8px">\u2039 History</button><h1>Analytics</h1>'+
-    '<div class="sub">Your progress over time. Weeks start on Monday. The current week is shown lighter because it isn\u2019t finished.</div>';
+    '<div class="sub">Your progress over time. Weeks start on Monday. The current week is shown lighter (or as a hollow dot) because it isn\u2019t finished.</div>';
 
   /* lifting */
   var L='',R='',B='';
@@ -1144,45 +1142,38 @@ function vAnalytics(){
   }
 
   /* biking */
-  var rides=S.rides.slice(),withKj=rides.filter(function(r){return r.kj>0;}),withW=rides.filter(function(r){return rideWatts(r)>0;});
+  var rides=S.rides.slice(),withW=rides.filter(function(r){return r.watts>0;}),withMin=rides.filter(function(r){return r.mins>0;});
+  var curWk=ymd(weekStart(new Date()));
   if(!rides.length)B+='<div class="aempty">Log a ride to see your biking progress.</div>';
   else{
     var bw={};
-    rides.forEach(function(r){var key=weekKey(r.date),w=bw[key]||(bw[key]={n:0,min:0,kj:0,wkj:0,wsec:0});
-      w.n++;w.min+=r.mins||0;if(r.kj>0)w.kj+=r.kj;
-      if(rideWatts(r)>0){w.wkj+=r.kj;w.wsec+=r.mins*60;}});
+    rides.forEach(function(r){var key=weekKey(r.date),w=bw[key]||(bw[key]={n:0,min:0,ws:0,wn:0});
+      w.n++;w.min+=r.mins||0;if(r.watts>0){w.ws+=r.watts;w.wn++;}});
     var bweeks=weekList(rides.map(function(r){return r.date;}));
-    var bwk=[];bweeks.forEach(function(d){var w=bw[ymd(d)];if(w&&w.wsec>0)bwk.push([d.getTime()+3.5*864e5,w.wkj*1000/w.wsec]);});   // time-weighted weekly average
-    var allKj=withW.reduce(function(a,r){return a+r.kj;},0),allSec=withW.reduce(function(a,r){return a+r.mins*60;},0);
-    var avgAllW=allSec?allKj*1000/allSec:0;
-    var bestW=withW.length?Math.max.apply(null,withW.map(rideWatts)):0;
+    var bwk=[];bweeks.forEach(function(d){var w=bw[ymd(d)];if(w&&w.wn)bwk.push([d.getTime()+3.5*864e5,w.ws/w.wn]);});
+    var avgAllW=withW.length?withW.reduce(function(a,r){return a+r.watts;},0)/withW.length:0;
+    var bestW=withW.length?Math.max.apply(null,withW.map(function(r){return r.watts;})):0;
     var latestW=bwk.length?bwk[bwk.length-1][1]:0;
     var outBody;
-    if(!withW.length){
-      outBody='<div class="aempty">Log minutes and total output (kJ) together to see average watts.'+
-        (withKj.length?' '+withKj.length+(withKj.length===1?' ride has':' rides have')+' output but no minutes.':'')+'</div>';
-    }else{
-      outBody=mini([[Math.round(latestW)+' W','latest week'],[Math.round(avgAllW)+' W','all time'],[Math.round(bestW)+' W','best ride']])+
-        '<div class="akey"><span><i style="background:var(--ride);opacity:.45"></i>Each ride</span><span><i style="background:var(--ride)"></i>Weekly average</span></div>'+
-        chartSvg({h:150,label:'Average output in watts over time',floor:0,yFmt:function(v){return Math.round(v)+' W';},
-          series:[{pts:withW.map(function(r){return [tOf(r.date),rideWatts(r)];}),dots:true,color:'var(--ride)',opacity:.4,r:3},
-                  {pts:bwk,line:true,dots:true,color:'var(--ride)'}]})+
-        '<div class="note">Average watts = total output (kJ) divided by time. Rides without both minutes and kJ are left out.</div>';
-    }
+    if(!withW.length)outBody='<div class="aempty">Add your average output (watts) when you log rides to see this.</div>';
+    else outBody=mini([[Math.round(latestW)+' W','latest week'],[Math.round(avgAllW)+' W','all time'],[Math.round(bestW)+' W','best ride']])+
+      '<div class="akey"><span><i style="background:var(--ride);opacity:.45"></i>Each ride</span><span><i style="background:var(--ride)"></i>Weekly average</span></div>'+
+      chartSvg({h:150,label:'Average output in watts over time',floor:0,yFmt:function(v){return Math.round(v)+' W';},
+        series:[{pts:withW.map(function(r){return [tOf(r.date),r.watts];}),dots:true,color:'var(--ride)',opacity:.4,r:3},
+                {pts:bwk,line:true,dots:true,color:'var(--ride)'}]})+
+      '<div class="note">Each dot is one ride. The line is the average of each week\u2019s rides.</div>';
     B+=aCard('Average output',latestW?Math.round(latestW)+' <small>W</small>':'',outBody);
-    var anyKj=withKj.length>0,anyMin=rides.some(function(r){return r.mins>0;}),mode=anyKj?'kj':anyMin?'min':'rides';
-    var cbw=bw[ymd(weekStart(new Date()))]||{n:0,min:0,kj:0};
-    var totKj=rides.reduce(function(a,r){return a+(r.kj||0);},0),totMin=rides.reduce(function(a,r){return a+(r.mins||0);},0);
-    var val=mode==='kj'?fmtInt(cbw.kj)+' <small>kJ this week</small>':mode==='min'?Math.round(cbw.min)+' <small>min this week</small>':cbw.n+' <small>rides this week</small>';
-    var bbars=bweeks.map(function(d){var w=bw[ymd(d)],v=w?(mode==='kj'?w.kj:mode==='min'?w.min:w.n):0;
-      return {t:d,v:v,lab:(w&&v)?(mode==='rides'?String(w.n):fmtInt(v)):''};});
-    var note=mode==='kj'?'Total output (kJ) per week. Rides without kJ count as 0.':mode==='min'?'Minutes ridden per week. Add kJ when you log rides to see total output.':'Rides per week. Add minutes and kJ when you log rides to see more.';
-    B+=aCard('Weekly volume',val,
-      mini([[fmtInt(totKj)+' kJ','total output'],[fmtInt(totMin)+' min','ridden'],[rides.length,rides.length===1?'ride':'rides']])+
-      barSvg({h:150,label:mode==='kj'?'Total output in kJ per week':mode==='min'?'Minutes ridden per week':'Rides per week',color:'var(--ride)',
-        minMax:mode==='kj'?300:mode==='min'?30:2,
-        yFmt:mode==='kj'?function(v){return fmtInt(v);}:mode==='min'?function(v){return Math.round(v)+' min';}:function(v){return String(Math.round(v*10)/10);},bars:bbars})+
-      '<div class="note">'+note+'</div>');
+
+    var cbw=bw[curWk]||{n:0,min:0},totMin=rides.reduce(function(a,r){return a+(r.mins||0);},0),volBody;
+    if(!withMin.length)volBody='<div class="aempty">Add minutes when you log rides to see your weekly volume.</div>';
+    else{
+      var vpts=bweeks.map(function(d){var w=bw[ymd(d)];return [d.getTime()+3.5*864e5,w?w.min:0,ymd(d)!==curWk];});
+      volBody=mini([[Math.round(cbw.min)+' min','this week'],[Math.round(totMin/bweeks.length)+' min','avg per week'],[fmtInt(totMin)+' min','total ridden']])+
+        chartSvg({h:150,label:'Minutes ridden per week',floor:0,steps:[10,15,20,30,45,60,90,120,180,240],yFmt:function(v){return Math.round(v)+' min';},
+          series:[{pts:vpts,line:true,dots:true,color:'var(--ride)'}]})+
+        '<div class="note">Minutes ridden per week. The hollow dot is the current week. Rides without minutes count as 0.</div>';
+    }
+    B+=aCard('Weekly volume',withMin.length?Math.round(cbw.min)+' <small>min this week</small>':'',volBody);
   }
 
   /* compose with the filter */
@@ -1278,15 +1269,8 @@ function rideSheet(ex){
   ui.sheet={kind:'ride',id:ex?ex.id:null};
   openSheet('<h2>'+(ex?'Edit ride':'Log a ride')+'</h2><label for="f-date">Date</label><input id="f-date" type="date" value="'+(ex?ex.date:today())+'">'+
     '<div class="row2"><div><label for="f-rmin">Minutes (optional)</label><input id="f-rmin" inputmode="numeric" value="'+(ex&&ex.mins?fmtNum(ex.mins):'')+'"></div>'+
-    '<div><label for="f-kj">Total output, kJ (optional)</label><input id="f-kj" inputmode="numeric" value="'+(ex&&ex.kj?fmtNum(ex.kj):'')+'"></div></div>'+
-    '<div class="pace" id="wprev"></div><div class="note">Average watts are worked out from minutes and kJ.</div>'+
+    '<div><label for="f-watts">Avg watts (optional)</label><input id="f-watts" inputmode="numeric" value="'+(ex&&ex.watts?fmtNum(ex.watts):'')+'"></div></div>'+
     '<button class="btn ride" data-act="saveRide">Save ride</button><button class="btn ghost" data-act="close">Cancel</button>');
-  updateWatts();
-}
-function updateWatts(){
-  var el=document.getElementById('wprev');if(!el)return;
-  var m=num(document.getElementById('f-rmin').value),k=num(document.getElementById('f-kj').value);
-  el.textContent=(m>0&&k>0)?'\u2248 '+Math.round(k*1000/(m*60))+' W average':'';
 }
 function latestLiftWith(k){
   var best=null;
@@ -1438,12 +1422,12 @@ var A={
   /* riding */
   logRide:function(){rideSheet();},
   saveRide:function(){
-    var date=document.getElementById('f-date').value,m=num(document.getElementById('f-rmin').value),k=num(document.getElementById('f-kj').value);
+    var date=document.getElementById('f-date').value,m=num(document.getElementById('f-rmin').value),k=num(document.getElementById('f-watts').value);
     if(!/^\d{4}-\d{2}-\d{2}$/.test(date)){toast('Pick a date.');return;}
     var sh=ui.sheet,old=sh&&sh.id?S.rides.filter(function(r){return r.id===sh.id;})[0]:null,made=null;
-    var pr={bestKj:S.rides.reduce(function(a,r){return Math.max(a,r.kj||0);},0),bestW:S.rides.reduce(function(a,r){return Math.max(a,rideWatts(r));},0)};
-    if(old){old.date=date;old.mins=isFinite(m)&&m>0?m:0;old.kj=isFinite(k)&&k>0?k:0;}
-    else{made={id:uid(),date:date,mins:isFinite(m)&&m>0?m:0,kj:isFinite(k)&&k>0?k:0,at:Date.now()};S.rides.push(made);advance('bike',date);}
+    var pr={bestW:S.rides.reduce(function(a,r){return Math.max(a,r.watts||0);},0)};
+    if(old){old.date=date;old.mins=isFinite(m)&&m>0?m:0;old.watts=isFinite(k)&&k>0?k:0;}
+    else{made={id:uid(),date:date,mins:isFinite(m)&&m>0?m:0,watts:isFinite(k)&&k>0?k:0,at:Date.now()};S.rides.push(made);advance('bike',date);}
     clearRest(date);
     save();closeSheet();render();
     if(made)celebrateRide(made,pr);
@@ -1534,7 +1518,6 @@ document.addEventListener('click',function(e){
 document.addEventListener('input',function(e){
   var id=e.target&&e.target.id;
   if(id==='f-mi'||id==='f-min'||id==='f-sec')updatePace();
-  if(id==='f-rmin'||id==='f-kj')updateWatts();
 });
 document.addEventListener('toggle',function(e){
   var d=e.target;if(d&&d.dataset&&d.dataset.key!==undefined){ui.open[d.dataset.key]=d.open?1:0;}
