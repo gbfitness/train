@@ -190,25 +190,16 @@ summary .wn{font:650 18px ui-serif,"New York",Georgia,serif}
   .donepop{animation:cheerfade 2.7s linear both;transform:translate(-50%,-50%)}.donepop .chk circle,.donepop .chk path{animation:none;stroke-dashoffset:0}}
 @keyframes cheerfade{0%,80%{opacity:1}100%{opacity:0}}
 
-/* rehab */
+/* menu */
 .menu{display:flex;align-items:center;gap:14px;width:100%;appearance:none;text-align:left;background:var(--card);
   border:1.5px solid var(--line);border-radius:16px;padding:14px 16px;margin-top:16px;color:var(--ink)}
 .menu .mt{font:650 19px ui-serif,"New York",Georgia,serif}
 .menu .mdots{display:flex;gap:5px;margin-left:auto;align-items:center}
-.areas{display:flex;gap:8px;margin:16px 0 4px}
-.area{appearance:none;flex:1;border:1.5px solid var(--line);background:var(--card);border-radius:12px;padding:11px 0;font-size:15px;font-weight:700}
-.area[aria-pressed="true"]{background:var(--c);border-color:var(--c);color:#fff}
-.rcard{margin-top:12px;border-radius:20px;background:var(--card);border:1.5px solid var(--line);overflow:hidden}
-.rfig{display:block;width:100%;height:auto;aspect-ratio:5/3;background:var(--paper)}
-.rbody{padding:16px 18px 18px}
-.rdose{display:inline-block;margin-top:10px;padding:7px 11px;border-radius:10px;background:var(--paper);font-weight:700;font-size:15px}
-.rbody ol{margin:12px 0 0;padding-left:22px}.rbody li{margin:7px 0}
-.rnav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:14px}
-.rdots{display:flex;gap:6px}.rdots i{width:8px;height:8px;border-radius:50%;background:var(--line)}.rdots i.on{background:var(--ink)}
 
 /* analytics */
-.pillbar{position:sticky;top:0;z-index:8;display:flex;gap:8px;margin:14px -18px 0;padding:10px 18px;background:var(--paper);box-shadow:0 1px 0 var(--line)}
-.pill{appearance:none;flex:1;border:1.5px solid var(--line);background:var(--card);border-radius:999px;padding:9px 0;font-size:14.5px;font-weight:700;color:var(--ink)}
+.pillbar{position:sticky;top:0;z-index:8;display:flex;gap:6px;margin:14px -18px 0;padding:10px 18px;background:var(--paper);box-shadow:0 1px 0 var(--line)}
+.pill{appearance:none;flex:1;border:1.5px solid var(--line);background:var(--card);border-radius:999px;padding:9px 0;font-size:13.5px;font-weight:700;color:var(--ink)}
+.pill.pwt[aria-pressed="true"]{color:#1B1300}
 .pill[aria-pressed="true"]{background:var(--c);border-color:var(--c);color:#fff}
 .pill.all[aria-pressed="true"]{color:var(--paper)}
 .acard{margin-top:12px;padding:14px 14px 10px;border:1.5px solid var(--line);border-radius:18px;background:var(--card)}
@@ -372,7 +363,7 @@ function seedBike(d){
 }
 function fresh(){
   var w={},i={};KEYS.forEach(function(k){w[k]=45;i[k]=5;});w.deadlift=95;
-  var d={v:3,settings:{weights:w,inc:i,next:'A',lastExport:null,runPause:{on:false,since:null},retCycle:0,retN:2},lifts:[],runs:[],rides:[],rests:[],rot:{ptr:0},active:null};
+  var d={v:3,settings:{weights:w,inc:i,next:'A',lastExport:null,runPause:{on:false,since:null},retCycle:0,retN:2},lifts:[],runs:[],rides:[],rests:[],body:[],rot:{ptr:0},active:null};
   seedBike(d);d.rot.ptr=initPtr(d);return d;
 }
 function coerce(o){
@@ -396,6 +387,8 @@ function coerce(o){
     return {id:String(r.id||uid()),date:String(r.date),miles:Number(r.miles),secs:Number(r.secs)||0,planId:pid,at:Number(r.at)||0};});
   d.rides=(Array.isArray(o.rides)?o.rides:[]).filter(function(r){return r&&re.test(String(r.date));}).map(function(r){
     return {id:String(r.id||uid()),date:String(r.date),mins:Number(r.mins)||0,watts:(r.watts!==undefined?Number(r.watts):Number(r.kj))||0,at:Number(r.at)||0};});   // older saves stored the typed number as kj; it was average watts
+  d.body=(Array.isArray(o.body)?o.body:[]).filter(function(b){return b&&re.test(String(b.date))&&Number(b.lb)>0;}).map(function(b){
+    return {id:String(b.id||uid()),date:String(b.date),lb:Number(b.lb),at:Number(b.at)||0};});
   d.rests=(Array.isArray(o.rests)?o.rests:[]).filter(function(x){return re.test(String(x));}).map(String);
   if((Number(o.v)||1)<2)seedBike(d);
   var rp=o.rot?Number(o.rot.ptr):NaN;
@@ -412,7 +405,7 @@ function load(){
   return fresh();
 }
 var S=load();
-var ui={tab:'today',open:{},confirm:null,sheet:null,sel:null,week:null,cal:null,rehab:{area:'ankle',i:0},aFilter:'all'};
+var ui={tab:'today',open:{},confirm:null,sheet:null,sel:null,week:null,cal:null,aFilter:'all'};
 function save(){
   try{localStorage.setItem(KEY,JSON.stringify(S));}
   catch(e){toast('Could not save. Storage may be full or blocked.');}
@@ -787,6 +780,7 @@ function vRun(){
 }
 
 /* ---------- views: ride, history ---------- */
+function rideRad(m){return m>0?Math.max(3,Math.min(9,2+0.1*m)):3.5;}   // bigger dot = longer ride; unknown length = small hollow ring
 function fmtInt(n){return Math.round(n).toLocaleString('en-US');}
 function rideStats(from){
   var r=S.rides.filter(function(x){return !from||parseYmd(x.date)>=from;});
@@ -833,8 +827,6 @@ function vHistory(){
   return '<h1>History</h1><div class="sub">'+count+(count===1?' activity':' activities')+' logged.</div>'+
     '<button class="menu" data-act="tab" data-tab="analytics"><span><span class="mt">Analytics</span><br><span class="note">Lifts, runs and rides over time</span></span>'+
       '<span class="mdots"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19V5M4 19h16M8 15l4-5 3 3 5-7"/></svg><span aria-hidden="true" style="font-size:24px;margin-left:6px">\u203a</span></span></button>'+
-    '<button class="menu" data-act="tab" data-tab="rehab" style="margin-top:10px"><span><span class="mt">Rehab exercises</span><br><span class="note">Ankle, groin and glute</span></span>'+
-      '<span class="mdots"><i class="d ride"></i><i class="d lift"></i><i class="d run"></i><span aria-hidden="true" style="font-size:24px;margin-left:6px">\u203a</span></span></button>'+
     '<h3>Backup</h3>'+
     '<div class="note">Everything is stored on this phone, inside this app. Last backup: '+(le?new Date(le).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'never')+'.</div>'+
     '<button class="btn ghost" data-act="exportData">Back up data</button>'+
@@ -948,91 +940,6 @@ function celebrate(i,j){
   }else burst(c.x,c.y,14,4.5);
 }
 
-/* ---------- rehab ---------- */
-var AREAS={ankle:{name:'Ankle',c:'--ride'},groin:{name:'Groin',c:'--lift'},glute:{name:'Glute',c:'--run'}};
-var REHAB=[{"id": "alphabet", "area": "ankle", "name": "Ankle alphabet", "dose": "1 to 2 full alphabets per foot", "what": "Gentle ankle mobility. It moves the joint through every direction.", "steps": ["Sit in a chair and straighten one leg so the foot is off the floor.", "Using your big toe as a pen, trace the letters A to Z in the air.", "Move only at the ankle and keep the leg still.", "Switch feet."], "tip": "Make the letters as big as feels comfortable.", "a": {"h": [86, 27], "n": [85, 37], "p": [82, 70], "k1": [106, 69], "a1": [130, 68], "t1": [136, 59], "k2": [104, 72], "a2": [105, 104], "t2": [113, 108], "e1": [88, 54], "w1": [97, 68], "e2": [84, 55], "w2": [92, 69]}, "b": {"h": [86, 27], "n": [85, 37], "p": [82, 70], "k1": [106, 69], "a1": [130, 68], "t1": [139, 76], "k2": [104, 72], "a2": [105, 104], "t2": [113, 108], "e1": [88, 54], "w1": [97, 68], "e2": [84, 55], "w2": [92, 69]}, "props": ["chair", "trace"], "period": 2400, "hold": false}, {"id": "calf", "area": "ankle", "name": "Calf raises", "dose": "2 to 3 sets of 12 to 15", "what": "Strengthens the calf and Achilles, which support the ankle when you run.", "steps": ["Stand facing a wall with your fingertips on it for balance.", "Rise up onto the balls of your feet over about 2 seconds.", "Lower slowly over about 3 seconds.", "When it gets easy, do it on one leg."], "tip": "The slow lowering is the important part.", "a": {"h": [96, 22], "n": [96, 32], "p": [96, 60], "k1": [97, 84], "a1": [96, 107], "t1": [107, 109], "k2": [94, 84], "a2": [93, 107], "t2": [104, 109], "e1": [108, 44], "w1": [122, 46], "e2": [105, 45], "w2": [120, 48]}, "b": {"h": [99, 13], "n": [99, 23], "p": [99, 51], "k1": [100, 75], "a1": [100, 98], "t1": [107, 109], "k2": [97, 75], "a2": [97, 98], "t2": [104, 109], "e1": [111, 36], "w1": [124, 40], "e2": [108, 37], "w2": [122, 42]}, "props": ["wall128"], "period": 2800, "hold": false}, {"id": "balance", "area": "ankle", "name": "Single-leg balance", "dose": "3 holds of 30 seconds per leg", "what": "Trains the small muscles and reflexes that keep the ankle from rolling.", "steps": ["Stand near something you can grab if needed.", "Lift one foot and balance on the other, with the knee soft.", "Hold for 30 seconds, then switch legs.", "To make it harder, close your eyes or stand on a folded towel or pillow."], "tip": "A little wobbling is normal. That is the exercise working.", "a": {"h": [98, 22], "n": [98, 32], "p": [100, 60], "k1": [122, 62], "a1": [121, 86], "t1": [129, 87], "k2": [100, 84], "a2": [100, 107], "t2": [110, 109], "e1": [110, 40], "w1": [124, 38], "e2": [88, 40], "w2": [76, 42]}, "b": {"h": [102, 22], "n": [101, 32], "p": [100, 60], "k1": [121, 63], "a1": [120, 87], "t1": [128, 88], "k2": [100, 84], "a2": [100, 107], "t2": [110, 109], "e1": [112, 37], "w1": [126, 33], "e2": [87, 43], "w2": [74, 47]}, "props": [], "period": 3600, "hold": false}, {"id": "tibialis", "area": "ankle", "name": "Toe raises against a wall", "dose": "2 to 3 sets of 15", "what": "Strengthens the front of the shin, which balances the calf and helps control the foot.", "steps": ["Lean your back against a wall with your heels about a foot out from it.", "Keep your legs straight and lift your toes as high as you can.", "Lower them slowly. Your heels stay on the floor."], "tip": "Move your feet farther from the wall to make it harder.", "a": {"h": [72, 22], "n": [73, 32], "p": [76, 58], "k1": [88, 82], "a1": [100, 106], "t1": [111, 108], "k2": [85, 82], "a2": [97, 106], "t2": [108, 108], "e1": [76, 46], "w1": [80, 60], "e2": [74, 47], "w2": [78, 61]}, "b": {"h": [72, 22], "n": [73, 32], "p": [76, 58], "k1": [88, 82], "a1": [100, 106], "t1": [109, 96], "k2": [85, 82], "a2": [97, 106], "t2": [106, 96], "e1": [76, 46], "w1": [80, 60], "e2": [74, 47], "w2": [78, 61]}, "props": ["wall64"], "period": 2400, "hold": false}, {"id": "squeeze", "area": "groin", "name": "Adductor squeeze", "dose": "10 squeezes, 5-second hold each", "what": "A gentle way to load the inner thigh (groin) muscles.", "steps": ["Lie on your back with knees bent and feet flat.", "Put a ball or a folded pillow between your knees.", "Squeeze it at moderate effort for 5 seconds, then relax.", "Build the effort up over the weeks, as long as it stays pain-free."], "tip": "Keep breathing during the squeeze.", "a": {"h": [36, 100], "n": [47, 103], "p": [80, 104], "k1": [100, 82], "a1": [114, 106], "t1": [124, 108], "k2": [98, 83], "a2": [112, 106], "t2": [122, 108], "e1": [62, 106], "w1": [76, 107], "e2": [60, 106], "w2": [74, 107]}, "b": {"h": [36, 100], "n": [47, 103], "p": [80, 104], "k1": [100, 82], "a1": [114, 106], "t1": [124, 108], "k2": [98, 83], "a2": [112, 106], "t2": [122, 108], "e1": [62, 106], "w1": [76, 107], "e2": [60, 106], "w2": [74, 107]}, "props": ["ball"], "period": 4000, "hold": true}, {"id": "adduction", "area": "groin", "name": "Side-lying inner thigh lift", "dose": "2 to 3 sets of 12 per side", "what": "Works the inner thigh of the bottom leg.", "steps": ["Lie on your side. Bend your top leg and plant that foot in front of your bottom knee.", "Keep the bottom leg straight with the toes facing forward.", "Lift the bottom leg a few inches, pause, and lower slowly.", "Switch sides."], "tip": "Small lifts are enough. Don’t swing the leg.", "a": {"h": [28, 88], "n": [40, 94], "p": [78, 100], "k1": [104, 104], "a1": [130, 106], "t1": [136, 100], "k2": [94, 84], "a2": [100, 106], "t2": [108, 108], "e1": [38, 108], "w1": [28, 96], "e2": [56, 100], "w2": [64, 108]}, "b": {"h": [28, 88], "n": [40, 94], "p": [78, 100], "k1": [104, 96], "a1": [129, 86], "t1": [135, 80], "k2": [94, 84], "a2": [100, 106], "t2": [108, 108], "e1": [38, 108], "w1": [28, 96], "e2": [56, 100], "w2": [64, 108]}, "props": [], "period": 2600, "hold": false}, {"id": "copenhagen", "area": "groin", "name": "Copenhagen plank, short version", "dose": "3 holds of 10 to 20 seconds per side", "what": "A harder groin exercise. Only move to it once the squeeze and leg lifts feel easy.", "steps": ["Lie on your side next to a bench or couch.", "Rest your top knee (not your foot) on the bench and prop up on your forearm.", "Lift your hips so your body forms a straight line, and hold.", "Lower, rest, and switch sides."], "tip": "Start with 10 seconds. Skip it if you feel pain in the groin.", "a": {"h": [32, 90], "n": [42, 91], "p": [80, 94], "k1": [104, 73], "a1": [128, 73], "t1": [134, 70], "k2": [100, 98], "a2": [118, 106], "t2": [126, 108], "e1": [42, 108], "w1": [56, 108], "e2": [58, 82], "w2": [72, 88]}, "b": {"h": [32, 87], "n": [42, 85], "p": [78, 79], "k1": [104, 73], "a1": [128, 73], "t1": [134, 70], "k2": [102, 88], "a2": [124, 84], "t2": [130, 80], "e1": [42, 108], "w1": [56, 108], "e2": [56, 72], "w2": [72, 78]}, "props": ["bench"], "period": 4200, "hold": true}, {"id": "butterfly", "area": "groin", "name": "Butterfly stretch", "dose": "2 to 3 holds of 30 seconds", "what": "A gentle stretch for the inner thighs.", "steps": ["Sit tall on the floor with the soles of your feet together.", "Hold your feet and let your knees drop toward the floor.", "For more stretch, lean forward slightly from the hips.", "Breathe and relax into it. No bouncing."], "tip": "A mild pull is right. It should never feel sharp.", "a": {"h": [100, 54], "n": [100, 64], "p": [100, 98], "k1": [122, 86], "a1": [102, 104], "t1": [99, 106], "k2": [78, 86], "a2": [98, 104], "t2": [101, 106], "e1": [112, 78], "w1": [103, 100], "e2": [88, 78], "w2": [97, 100]}, "b": {"h": [100, 54], "n": [100, 64], "p": [100, 98], "k1": [126, 95], "a1": [102, 104], "t1": [99, 106], "k2": [74, 95], "a2": [98, 104], "t2": [101, 106], "e1": [113, 82], "w1": [103, 100], "e2": [87, 82], "w2": [97, 100]}, "props": [], "period": 4000, "hold": true}, {"id": "bridge", "area": "glute", "name": "Glute bridge", "dose": "3 sets of 12, with a 2-second squeeze at the top", "what": "Strengthens the glutes and helps them do their share when you run and lift.", "steps": ["Lie on your back with knees bent and feet flat, hip-width apart.", "Push through your heels and lift your hips until your body is straight from shoulders to knees.", "Squeeze your glutes for 2 seconds at the top.", "Lower slowly."], "tip": "If you feel it mostly in your hamstrings, bring your feet a little closer to you.", "a": {"h": [36, 100], "n": [47, 103], "p": [82, 104], "k1": [104, 82], "a1": [116, 106], "t1": [126, 108], "k2": [102, 83], "a2": [114, 106], "t2": [124, 108], "e1": [62, 106], "w1": [76, 107], "e2": [60, 106], "w2": [74, 107]}, "b": {"h": [36, 100], "n": [48, 102], "p": [80, 82], "k1": [104, 76], "a1": [116, 106], "t1": [126, 108], "k2": [102, 77], "a2": [114, 106], "t2": [124, 108], "e1": [62, 106], "w1": [76, 107], "e2": [60, 106], "w2": [74, 107]}, "props": [], "period": 3400, "hold": true}, {"id": "clamshell", "area": "glute", "name": "Clamshell", "dose": "2 to 3 sets of 15 per side", "what": "Targets the side of the hip, which keeps the knee and pelvis steady when you run.", "steps": ["Lie on your side with hips and knees bent and your feet together.", "Keep your feet touching and lift your top knee.", "Don’t let your hips roll backward.", "Lower slowly, then switch sides."], "tip": "A loop band just above the knees makes it harder.", "a": {"h": [28, 86], "n": [40, 94], "p": [78, 98], "k1": [102, 100], "a1": [85, 104], "t1": [81, 101], "k2": [102, 106], "a2": [84, 108], "t2": [80, 105], "e1": [54, 100], "w1": [64, 108], "e2": [36, 108], "w2": [26, 98]}, "b": {"h": [28, 86], "n": [40, 94], "p": [78, 98], "k1": [97, 82], "a1": [85, 104], "t1": [81, 101], "k2": [102, 106], "a2": [84, 108], "t2": [80, 105], "e1": [54, 100], "w1": [64, 108], "e2": [36, 108], "w2": [26, 98]}, "props": ["bandKnees"], "period": 2600, "hold": false}, {"id": "abduction", "area": "glute", "name": "Side-lying leg raise", "dose": "2 to 3 sets of 12 per side", "what": "Another side-of-hip exercise, a bit harder than the clamshell.", "steps": ["Lie on your side with the bottom leg bent for balance.", "Keep the top leg straight and in line with your body.", "Lift it up and slightly back, with the toes facing forward.", "Lower slowly, then switch sides."], "tip": "If you feel it in the front of your hip, move the leg a little farther back.", "a": {"h": [28, 86], "n": [40, 94], "p": [78, 98], "k1": [104, 98], "a1": [130, 100], "t1": [136, 97], "k2": [102, 106], "a2": [84, 108], "t2": [80, 105], "e1": [54, 100], "w1": [64, 108], "e2": [36, 108], "w2": [26, 98]}, "b": {"h": [28, 86], "n": [40, 94], "p": [78, 98], "k1": [103, 87], "a1": [127, 77], "t1": [133, 76], "k2": [102, 106], "a2": [84, 108], "t2": [80, 105], "e1": [54, 100], "w1": [64, 108], "e2": [36, 108], "w2": [26, 98]}, "props": [], "period": 2600, "hold": false}, {"id": "bandwalk", "area": "glute", "name": "Lateral band walk", "dose": "2 to 3 sets of 10 steps each way", "what": "Works the side of the hips while standing, closer to how they work when you run.", "steps": ["Put a loop band around your ankles or just above your knees.", "Sit back into a slight squat with your feet hip-width apart.", "Step sideways, keeping tension on the band.", "Take 10 steps, then 10 back the other way."], "tip": "Keep your toes pointing forward and don’t let your knees cave in.", "a": {"h": [100, 26], "n": [100, 36], "p": [100, 64], "k1": [112, 84], "a1": [114, 107], "t1": [118, 109], "k2": [88, 84], "a2": [86, 107], "t2": [82, 109], "e1": [114, 48], "w1": [106, 62], "e2": [86, 48], "w2": [94, 62]}, "b": {"h": [105, 26], "n": [105, 36], "p": [105, 64], "k1": [122, 84], "a1": [128, 107], "t1": [132, 109], "k2": [93, 84], "a2": [86, 107], "t2": [82, 109], "e1": [119, 48], "w1": [111, 62], "e2": [91, 48], "w2": [99, 62]}, "props": ["bandAnkles"], "period": 2400, "hold": false}];
-function rehabList(){return REHAB.filter(function(x){return x.area===ui.rehab.area;});}
-function curRehab(){var l=rehabList();return l[Math.max(0,Math.min(ui.rehab.i,l.length-1))];}
-function vRehab(){
-  var l=rehabList(),ex=curRehab(),i=l.indexOf(ex),ar=AREAS[ui.rehab.area];
-  var areas=Object.keys(AREAS).map(function(k){
-    return '<button class="area" style="--c:var('+AREAS[k].c+')" aria-pressed="'+(ui.rehab.area===k)+'" data-act="rehabArea" data-area="'+k+'">'+AREAS[k].name+'</button>';}).join('');
-  var dots=l.map(function(x,n){return '<i class="'+(n===i?'on':'')+'"></i>';}).join('');
-  return '<button class="link" data-act="tab" data-tab="history" style="padding:0 0 8px">\u2039 History</button>'+
-    '<h1>Rehab</h1><div class="sub">Pick an area, then use the arrows to cycle through the exercises.</div>'+
-    '<div class="areas">'+areas+'</div>'+
-    '<article class="rcard"><canvas class="rfig" id="rehabFig" width="500" height="300" role="img" aria-label="'+esc('Animation of '+ex.name)+'"></canvas>'+
-      '<div class="rbody"><div class="sub">'+ar.name+', '+(i+1)+' of '+l.length+'</div><h2 style="margin-top:4px">'+esc(ex.name)+'</h2>'+
-      '<div class="rdose">'+esc(ex.dose)+'</div><p class="note" style="margin-top:10px">'+esc(ex.what)+'</p>'+
-      '<ol>'+ex.steps.map(function(t){return '<li>'+esc(t)+'</li>';}).join('')+'</ol>'+
-      (ex.tip?'<p class="note" style="margin-top:10px"><b>Tip:</b> '+esc(ex.tip)+'</p>':'')+'</div></article>'+
-    '<div class="rnav"><button class="small" data-act="rehabNav" data-d="-1">\u2039 Previous</button><div class="rdots" aria-hidden="true">'+dots+'</div>'+
-      '<button class="small" data-act="rehabNav" data-d="1">Next \u203a</button></div>'+
-    '<p class="note" style="margin-top:18px">These are general, commonly used exercises, not a diagnosis or a treatment plan. The sets and reps are typical starting points. Stop anything that causes sharp pain. If a problem keeps coming back, a physical therapist can tailor this to you.</p>';
-}
-function easeR(ph,hold){
-  function sm(x){return x*x*(3-2*x);}
-  if(hold){if(ph<.3)return sm(ph/.3);if(ph<.7)return 1;return sm(1-(ph-.7)/.3);}
-  return .5-.5*Math.cos(ph*Math.PI*2);
-}
-function lerpP(A,B,e){var o={},k;for(k in A){var b=B[k]||A[k];o[k]=[A[k][0]+(b[0]-A[k][0])*e,A[k][1]+(b[1]-A[k][1])*e];}return o;}
-function lerp2(a,b,t){return [a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t];}
-var rc=null;
-function rehabColors(){
-  var cs=getComputedStyle(document.documentElement);function v(n,f){return (cs.getPropertyValue(n)||'').trim()||f;}
-  return {ink:v('--ink','#12232E'),ink2:v('--ink2','#52626D'),line:v('--line','#D3DAD6'),'--ride':v('--ride','#0C8F9B'),'--lift':v('--lift','#4F46B8'),'--run':v('--run','#D93F5B')};
-}
-function drawRehab(cv,ex,e){
-  var ctx;try{ctx=cv.getContext('2d');}catch(err){ctx=null;}if(!ctx)return;
-  var dpr=window.devicePixelRatio||1,w=cv.clientWidth||300,h=w*0.6;
-  if(cv.width!==Math.round(w*dpr)||cv.height!==Math.round(h*dpr)){cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);}
-  var s=w/200,c=rc||rehabColors(),acc=c[AREAS[ex.area].c],P=lerpP(ex.a,ex.b,e);
-  ctx.setTransform(dpr*s,0,0,dpr*s,0,0);ctx.clearRect(0,0,200,120);
-  ctx.lineCap='round';ctx.lineJoin='round';
-  ctx.strokeStyle=c.line;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(8,111.5);ctx.lineTo(192,111.5);ctx.stroke();
-  function seg(keys,wd,col){ctx.strokeStyle=col;ctx.lineWidth=wd;ctx.beginPath();ctx.moveTo(P[keys[0]][0],P[keys[0]][1]);
-    for(var n=1;n<keys.length;n++)ctx.lineTo(P[keys[n]][0],P[keys[n]][1]);ctx.stroke();}
-  function prop(layer){(ex.props||[]).forEach(function(pr){
-    if(layer==='back'){
-      ctx.globalAlpha=.45;ctx.fillStyle=c.ink2;ctx.strokeStyle=c.ink2;
-      if(pr==='chair'){ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(64,38);ctx.lineTo(66,74);ctx.lineTo(98,74);ctx.moveTo(68,74);ctx.lineTo(68,110);ctx.moveTo(96,74);ctx.lineTo(96,110);ctx.stroke();}
-      if(pr==='wall128')ctx.fillRect(127,14,4,97);
-      if(pr==='wall64')ctx.fillRect(62,10,4,101);
-      if(pr==='bench'){ctx.fillRect(96,76,64,5);ctx.fillRect(102,81,4,29);ctx.fillRect(150,81,4,29);}
-      ctx.globalAlpha=1;
-      if(pr==='trace'){ctx.strokeStyle=acc;ctx.lineWidth=1.5;ctx.setLineDash([3,3]);ctx.beginPath();ctx.arc(138,67,11,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);}
-    }
-    if(layer==='front'&&pr==='ball'){ctx.fillStyle=acc;ctx.strokeStyle=c.ink;ctx.lineWidth=1.5;ctx.beginPath();ctx.ellipse(P.k1[0]-2,P.k1[1]+9,8-2.2*e,8+1.4*e,0,0,Math.PI*2);ctx.fill();ctx.stroke();}
-    if(layer==='front'){
-      ctx.strokeStyle=acc;ctx.lineWidth=3;ctx.beginPath();
-      if(pr==='bandKnees'){var t=lerp2(P.p,P.k1,.8),b=lerp2(P.p,P.k2,.8);ctx.moveTo(t[0],t[1]);ctx.lineTo(b[0],b[1]);}
-      if(pr==='bandAnkles'){ctx.moveTo(P.a1[0],P.a1[1]-6);ctx.lineTo(P.a2[0],P.a2[1]-6);}
-      ctx.stroke();
-    }
-  });}
-  prop('back');
-  seg(['n','e2','w2'],4.5,c.ink2);seg(['p','k2','a2','t2'],6,c.ink2);
-  prop('mid');
-  seg(['n','p'],8,c.ink);
-  ctx.fillStyle=c.ink;ctx.beginPath();ctx.arc(P.h[0],P.h[1],7,0,Math.PI*2);ctx.fill();
-  seg(['p','k1','a1','t1'],6,c.ink);seg(['n','e1','w1'],4.5,c.ink);
-  prop('front');
-}
-var rh={raf:0,t0:0};
-function rehabLoop(){
-  rc=rehabColors();
-  if(rh.raf)return;
-  rh.t0=performance.now();
-  function f(now){
-    var cv=document.getElementById('rehabFig');
-    if(!cv||ui.tab!=='rehab'){rh.raf=0;return;}
-    var ex=curRehab(),per=ex.period||2600;
-    drawRehab(cv,ex,RM?1:easeR(((now-rh.t0)%per+per)%per/per,ex.hold));
-    rh.raf=RM?0:requestAnimationFrame(f);
-  }
-  rh.raf=requestAnimationFrame(f);
-}
-
 /* ---------- analytics ---------- */
 function fmtPace(sec){sec=Math.round(sec);return Math.floor(sec/60)+':'+pad(sec%60);}
 function tOf(ds){return parseYmd(ds).getTime();}
@@ -1060,7 +967,7 @@ function chartSvg(o){
   var pd=(y1-y0)*.14;y0-=pd;y1+=pd;if(o.floor!==undefined)y0=Math.max(o.floor,y0);
   function X(t){return L+(t-x0)/(x1-x0)*iw;}
   function Y(v){var f=(v-y0)/(y1-y0);return o.invert?T+f*ih:T+(1-f)*ih;}
-  var g='',st=niceStep((y1-y0)/3,o.steps),v;
+  var g='',st=niceStep((y1-y0)/4,o.steps),v;
   for(v=Math.ceil(y0/st)*st;v<=y1+1e-9;v+=st){var yy=Y(v).toFixed(1);
     g+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+yy+'" y2="'+yy+'" stroke="var(--line)" stroke-width="1"/>'+
        '<text x="'+(L-6)+'" y="'+(+yy+3.5)+'" text-anchor="end">'+esc(o.yFmt(v))+'</text>';}
@@ -1073,7 +980,7 @@ function chartSvg(o){
     if(sr.line&&pts.length>1)g+='<path d="'+pts.map(function(q,n){return (n?'L':'M')+X(q[0]).toFixed(1)+' '+Y(q[1]).toFixed(1);}).join('')+
       '" fill="none" stroke="'+sr.color+'" stroke-width="'+(sr.width||2.5)+'" stroke-linejoin="round" stroke-linecap="round"'+(sr.opacity?' opacity="'+sr.opacity+'"':'')+'/>';
     if(sr.dots)pts.forEach(function(q){var hol=q[2]===false;
-      g+='<circle cx="'+X(q[0]).toFixed(1)+'" cy="'+Y(q[1]).toFixed(1)+'" r="'+(sr.r||3.5)+'" fill="'+(hol?'var(--card)':sr.color)+'" stroke="'+sr.color+'" stroke-width="'+(hol?2:0)+'"'+(sr.opacity&&!sr.line?' opacity="'+sr.opacity+'"':'')+'/>';});
+      g+='<circle cx="'+X(q[0]).toFixed(1)+'" cy="'+Y(q[1]).toFixed(1)+'" r="'+(q[3]||sr.r||3.5)+'" fill="'+(hol?'var(--card)':sr.color)+'" stroke="'+sr.color+'" stroke-width="'+(hol?2:0)+'"'+(sr.opacity&&!sr.line&&!hol?' opacity="'+sr.opacity+'"':'')+'/>';});
   });
   return '<svg class="achart" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+esc(o.label||'Chart')+'">'+g+'</svg>';
 }
@@ -1101,7 +1008,7 @@ function vAnalytics(){
     '<div class="sub">Your progress over time. Weeks start on Monday. The current week is shown lighter (or as a hollow dot) because it isn\u2019t finished.</div>';
 
   /* lifting */
-  var L='',R='',B='';
+  var L='',R='',B='',W='';
   var lifts=S.lifts.slice().sort(function(a,b){return a.date.localeCompare(b.date)||a.at-b.at;});
   if(!lifts.length)L+='<div class="aempty">Finish a workout to see your lifting progress.</div>';
   else{
@@ -1154,14 +1061,25 @@ function vAnalytics(){
     var avgAllW=withW.length?withW.reduce(function(a,r){return a+r.watts;},0)/withW.length:0;
     var bestW=withW.length?Math.max.apply(null,withW.map(function(r){return r.watts;})):0;
     var latestW=bwk.length?bwk[bwk.length-1][1]:0;
+    function sizeKey(){
+      var dl=[],unk=false;
+      withW.forEach(function(r){if(r.mins>0){var m=Math.round(r.mins/5)*5||5;if(dl.indexOf(m)<0)dl.push(m);}else unk=true;});
+      dl.sort(function(x,y){return x-y;});
+      var pick=dl.length<=3?dl:[dl[0],dl[Math.floor((dl.length-1)/2)],dl[dl.length-1]];
+      var h='<div class="akey">';
+      if(pick.length)h+='<span>Dot size = ride length:</span>'+pick.map(function(m){var d=(2*rideRad(m)).toFixed(1);
+        return '<span><i style="width:'+d+'px;height:'+d+'px;background:var(--ride);opacity:.45;vertical-align:middle"></i>'+m+' min</span>';}).join('');
+      if(unk)h+='<span><i style="width:7px;height:7px;border:2px solid var(--ride);background:var(--card);box-sizing:border-box;vertical-align:middle"></i>no minutes</span>';
+      return h+'<span><i style="background:var(--ride);vertical-align:middle"></i>Weekly average</span></div>';
+    }
     var outBody;
     if(!withW.length)outBody='<div class="aempty">Add your average output (watts) when you log rides to see this.</div>';
     else outBody=mini([[Math.round(latestW)+' W','latest week'],[Math.round(avgAllW)+' W','all time'],[Math.round(bestW)+' W','best ride']])+
-      '<div class="akey"><span><i style="background:var(--ride);opacity:.45"></i>Each ride</span><span><i style="background:var(--ride)"></i>Weekly average</span></div>'+
-      chartSvg({h:150,label:'Average output in watts over time',floor:0,yFmt:function(v){return Math.round(v)+' W';},
-        series:[{pts:withW.map(function(r){return [tOf(r.date),r.watts];}),dots:true,color:'var(--ride)',opacity:.4,r:3},
+      sizeKey()+
+      chartSvg({h:150,label:'Average output in watts over time. Bigger dots are longer rides.',floor:0,yFmt:function(v){return Math.round(v)+' W';},
+        series:[{pts:withW.map(function(r){return r.mins>0?[tOf(r.date),r.watts,true,rideRad(r.mins)]:[tOf(r.date),r.watts,false,3.5];}),dots:true,color:'var(--ride)',opacity:.4},
                 {pts:bwk,line:true,dots:true,color:'var(--ride)'}]})+
-      '<div class="note">Each dot is one ride. The line is the average of each week\u2019s rides.</div>';
+      '<div class="note">Each dot is one ride, and a bigger dot is a longer ride. The line is the average of each week\u2019s rides, so read it together with the dot sizes.</div>';
     B+=aCard('Average output',latestW?Math.round(latestW)+' <small>W</small>':'',outBody);
 
     var cbw=bw[curWk]||{n:0,min:0},totMin=rides.reduce(function(a,r){return a+(r.mins||0);},0),volBody;
@@ -1176,14 +1094,35 @@ function vAnalytics(){
     B+=aCard('Weekly volume',withMin.length?Math.round(cbw.min)+' <small>min this week</small>':'',volBody);
   }
 
+  /* body weight */
+  var wts=sortedBody(),logBtn='<button class="btn ghost" data-act="logWeight" style="margin-top:12px">Log weight</button>';
+  function dlt(x,y){var d=x-y;return (d>0?'+':d<0?'\u2212':'')+fmtNum(+Math.abs(d).toFixed(1))+' lb';}
+  if(!wts.length)W+=aCard('Body weight','','<div class="aempty">No weigh-ins yet. Add one to start tracking.</div>'+logBtn);
+  else{
+    var wl=wts[wts.length-1],wf=wts[0],wp=wts.length>1?wts[wts.length-2]:null;
+    var wrows=wts.slice().reverse().slice(0,24).map(function(x,i,arr){
+      var pv=arr[i+1];
+      return '<div class="item"><span class="bar" style="background:var(--amber)"></span><div class="body"><div class="h">'+fmtNum(x.lb)+' lb</div>'+
+        '<div class="x">'+fmtDate(x.date)+(pv?'<span style="margin-left:12px">'+dlt(x.lb,pv.lb)+'</span>':'')+'</div></div>'+
+        '<span class="acts"><button class="del" data-act="edit" data-kind="weigh" data-id="'+esc(x.id)+'">Edit</button>'+
+        '<button class="del" data-act="del" data-kind="weigh" data-id="'+esc(x.id)+'">Delete</button></span></div>';}).join('');
+    W+=aCard('Body weight',fmtNum(wl.lb)+' <small>lb</small>',
+      (wp?mini([[fmtNum(wl.lb)+' lb','latest'],[dlt(wl.lb,wp.lb),'since last'],[dlt(wl.lb,wf.lb),'since '+fmtShort(parseYmd(wf.date))]]):
+        '<div class="note" style="margin:-2px 0 4px">Latest weigh-in: '+fmtDate(wl.date)+'. Add another to see a trend.</div>')+
+      chartSvg({h:150,label:'Body weight over time',steps:[0.5,1,2,5,10,20,50],yFmt:function(v){return fmtNum(+v.toFixed(1))+' lb';},
+        series:[{pts:wts.map(function(x){return [tOf(x.date),x.lb];}),line:true,dots:true,color:'var(--amber)'}]})+
+      logBtn+'<div class="note" style="margin-top:14px"><b>Weigh-ins</b></div>'+wrows);
+  }
+
   /* compose with the filter */
   var f=ui.aFilter||'all',out='';
   function sec(title,body){return (f==='all'?'<h3>'+title+'</h3>':'')+body;}
   if(f==='all'||f==='lift')out+=sec('Lifting',L);
   if(f==='all'||f==='run')out+=sec('Running',R);
   if(f==='all'||f==='ride')out+=sec('Biking',B);
-  var pills=[['all','All','ink'],['lift','Lifting','lift'],['run','Running','run'],['ride','Biking','ride']].map(function(x){
-    return '<button class="pill'+(x[0]==='all'?' all':'')+'" style="--c:var(--'+x[2]+')" aria-pressed="'+(f===x[0])+'" data-act="aFilter" data-f="'+x[0]+'">'+x[1]+'</button>';}).join('');
+  if(f==='all'||f==='weight')out+=sec('Body weight',W);
+  var pills=[['all','All','ink'],['lift','Lifting','lift'],['run','Running','run'],['ride','Biking','ride'],['weight','Weight','amber']].map(function(x){
+    return '<button class="pill'+(x[0]==='all'?' all':'')+(x[0]==='weight'?' pwt':'')+'" style="--c:var(--'+x[2]+')" aria-pressed="'+(f===x[0])+'" data-act="aFilter" data-f="'+x[0]+'">'+x[1]+'</button>';}).join('');
   return h+'<div class="pillbar" role="group" aria-label="Show activity">'+pills+'</div>'+out;
 }
 
@@ -1191,10 +1130,9 @@ function vAnalytics(){
 var app=document.getElementById('app'),nav=document.getElementById('nav'),sheetEl=document.getElementById('sheet');
 function render(){
   proj=buildProj();
-  app.innerHTML={today:vToday,lift:vLift,run:vRun,ride:vRide,history:vHistory,rehab:vRehab,analytics:vAnalytics}[ui.tab]();
-  Array.prototype.forEach.call(nav.querySelectorAll('button'),function(b){b.setAttribute('aria-current',String(b.dataset.tab===ui.tab||((ui.tab==='rehab'||ui.tab==='analytics')&&b.dataset.tab==='history')));});
+  app.innerHTML={today:vToday,lift:vLift,run:vRun,ride:vRide,history:vHistory,analytics:vAnalytics}[ui.tab]();
+  Array.prototype.forEach.call(nav.querySelectorAll('button'),function(b){b.setAttribute('aria-current',String(b.dataset.tab===ui.tab||(ui.tab==='analytics'&&b.dataset.tab==='history')));});
   tick();syncWake();
-  if(ui.tab==='rehab')rehabLoop();
 }
 
 /* ---------- rest timer ---------- */
@@ -1271,6 +1209,14 @@ function rideSheet(ex){
     '<div class="row2"><div><label for="f-rmin">Minutes (optional)</label><input id="f-rmin" inputmode="numeric" value="'+(ex&&ex.mins?fmtNum(ex.mins):'')+'"></div>'+
     '<div><label for="f-watts">Avg watts (optional)</label><input id="f-watts" inputmode="numeric" value="'+(ex&&ex.watts?fmtNum(ex.watts):'')+'"></div></div>'+
     '<button class="btn ride" data-act="saveRide">Save ride</button><button class="btn ghost" data-act="close">Cancel</button>');
+}
+function sortedBody(){return S.body.slice().sort(function(a,b){return a.date.localeCompare(b.date)||a.at-b.at;});}
+function weighSheet(ex){
+  ui.sheet={kind:'weigh',id:ex?ex.id:null};
+  var b=sortedBody(),last=b.length?b[b.length-1]:null;
+  openSheet('<h2>'+(ex?'Edit weigh-in':'Log weight')+'</h2><label for="f-date">Date</label><input id="f-date" type="date" value="'+(ex?ex.date:today())+'">'+
+    '<label for="f-lb">Weight (lb)</label><input id="f-lb" inputmode="decimal" value="'+(ex?fmtNum(ex.lb):'')+'" placeholder="'+(last?fmtNum(last.lb):'e.g. 185.4')+'">'+
+    '<button class="btn" data-act="saveWeigh">Save</button><button class="btn ghost" data-act="close">Cancel</button>');
 }
 function latestLiftWith(k){
   var best=null;
@@ -1349,10 +1295,8 @@ var A={
   openCal:function(){var b=parseYmd(ui.sel||today());ui.cal={y:b.getFullYear(),m:b.getMonth()};calSheet();},
   calNav:function(d){var c=ui.cal,x=new Date(c.y,c.m+Number(d.d),1);ui.cal={y:x.getFullYear(),m:x.getMonth()};calSheet();},
 
-  /* rehab */
+  /* analytics */
   aFilter:function(d){ui.aFilter=d.f;render();},
-  rehabArea:function(d){ui.rehab={area:d.area,i:0};render();},
-  rehabNav:function(d){var n=rehabList().length;ui.rehab.i=((ui.rehab.i+Number(d.d))%n+n)%n;render();},
 
   /* lifting */
   swap:function(){S.settings.next=S.settings.next==='A'?'B':'A';save();render();},
@@ -1433,8 +1377,23 @@ var A={
     if(made)celebrateRide(made,pr);
   },
 
+  /* body weight */
+  logWeight:function(){weighSheet();},
+  saveWeigh:function(){
+    var date=document.getElementById('f-date').value,lb=num(document.getElementById('f-lb').value);
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(date)){toast('Pick a date.');return;}
+    if(!isFinite(lb)||lb<20||lb>1000){toast('Enter your weight in pounds.');return;}
+    var sh=ui.sheet,ex=sh&&sh.id?S.body.filter(function(b){return b.id===sh.id;})[0]:null;
+    var same=S.body.filter(function(b){return b.date===date&&(!ex||b.id!==ex.id);})[0];
+    if(ex){ex.date=date;ex.lb=lb;if(same)S.body=S.body.filter(function(b){return b!==same;});}
+    else if(same){same.lb=lb;same.at=Date.now();}
+    else S.body.push({id:uid(),date:date,lb:lb,at:Date.now()});
+    save();closeSheet();render();toast('Weigh-in saved.');
+  },
+
   /* editing */
   edit:function(d){
+    if(d.kind==='weigh'){var wb=S.body.filter(function(x){return x.id===d.id;})[0];if(wb)weighSheet(wb);return;}
     if(d.kind==='lift'){var l=S.lifts.filter(function(x){return x.id===d.id;})[0];if(l)liftSheet(l);}
     if(d.kind==='run'){var r=S.runs.filter(function(x){return x.id===d.id;})[0];if(r)runSheet(r.planId||'',r);}
     if(d.kind==='ride'){var b=S.rides.filter(function(x){return x.id===d.id;})[0];if(b)rideSheet(b);}
@@ -1458,13 +1417,14 @@ var A={
 
   /* history + settings */
   del:function(d){
-    var msg=d.kind==='lift'?'Delete this workout? Your next-workout weights will not change.':
+    var msg=d.kind==='weigh'?'Delete this weigh-in?':d.kind==='lift'?'Delete this workout? Your next-workout weights will not change.':
       d.kind==='rest'?'Delete this rest day?':'Delete this entry? The rotation will not move back. Use Change what\u2019s due on Today if needed.';
     ask(msg,'Delete',function(){
       if(d.kind==='lift')S.lifts=S.lifts.filter(function(x){return x.id!==d.id;});
       if(d.kind==='run')S.runs=S.runs.filter(function(x){return x.id!==d.id;});
       if(d.kind==='ride')S.rides=S.rides.filter(function(x){return x.id!==d.id;});
       if(d.kind==='rest')S.rests=S.rests.filter(function(x){return x!==d.id;});
+      if(d.kind==='weigh')S.body=S.body.filter(function(x){return x.id!==d.id;});
       save();render();
     },true);
   },
