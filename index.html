@@ -298,7 +298,7 @@ var ROT=['bike','lift','run','lift'];    // the 4-day rotation; lift alternates 
 var TYPES={bike:{name:'Bike',css:'ride'},lift:{name:'Lift',css:'lift'},run:{name:'Run',css:'run'}};
 var LIFTS={squat:'Squat',bench:'Bench press',pullup:'Pull-ups',row:'Barbell row',ohp:'Overhead press',deadlift:'Deadlift'};   // row stays so older workouts still load
 var WORKOUTS={A:['squat','bench','pullup'],B:['squat','ohp','deadlift']};
-var SETS={squat:5,bench:5,pullup:5,row:5,ohp:5,deadlift:1};
+var SETS={squat:3,bench:5,pullup:5,row:5,ohp:5,deadlift:1};
 var REPS={pullup:10};                       // everything else is 5 reps
 function repsOf(k){return REPS[k]||5;}
 function incFor(k){return k==='pullup'?0:S.settings.inc[k];}   // pull-ups: weight is added weight, no automatic increase
